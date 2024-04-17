@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { mongoRegisterUser } from './controllers/userController.js';
 import { db } from '../app.js';
 import { body, validationResult } from 'express-validator';
-import passport from 'passport';
+import passport from './config/passport.js';
 import cors from 'cors';
 
 const router = new Router();
@@ -33,7 +33,7 @@ const validateUser = [
         if (!errors.isEmpty()) {
             res.status(400).json({ errors: errors.array() });
         } else {
-            next(); // Seguir con el siguiente middleware
+            next();
         }
     }
 ];
