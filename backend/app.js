@@ -22,11 +22,11 @@ app.use(session({
   resave: false,
   saveUninitialized: false
 }));
+app.use(passport.initialize());
+app.use(passport.session());
+
 app.use(router);
 app.use(history());
-
-
-app.use(passport.session());
 
 // const routes = router.stack
 //   .filter(layer => layer.route)
