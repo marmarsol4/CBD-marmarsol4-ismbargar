@@ -13,12 +13,15 @@ router.get('/', (req, res) => {
 router.post('/register', validateUser, mongoRegisterUser);
 
 router.post('/login', (req, res, next) => {
-    passport.authenticate('local', (err, user, info) => {
+    passport.authenticate('local', (err, user, _) => {
         if (err) { 
             return next(err);
         }
         if (!user) {
-            return res.status(401).json({ message: info.message }); 
+            return res.status(404).json({ message: 'El usuario no está registrado' }); 
+        }
+        if (req.isAuthenticated()) {
+            return res.status(401).json({ message: 'Ya existe una sesión activa'});
         }
         req.login(user, (err) => {
             if (err) {
