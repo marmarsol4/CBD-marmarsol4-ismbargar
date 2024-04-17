@@ -13,19 +13,18 @@ router.get('/', (req, res) => {
 router.post('/register', validateUser, mongoRegisterUser);
 
 router.post('/login', (req, res, next) => {
-    passport.authenticate('local', (err, user, _) => {
-        if (err) { 
+    passport.authenticate('local', (err, user, info) => {
+        if (err) {
             return next(err);
         }
         if (!user) {
-            return res.status(404).json({ message: 'El usuario no está registrado' }); 
+            return res.status(404).json({ message: info.message || 'Hubo un error al intentar iniciar sesión'}); 
         }
         if (req.isAuthenticated()) {
             return res.status(401).json({ message: 'Ya existe una sesión activa'});
         }
         req.login(user, (err) => {
             if (err) {
-                console.log("1");
                 return next(err); 
             }
             return res.status(200).json({ message: 'Inicio de sesión exitoso' });
@@ -36,7 +35,7 @@ router.post('/login', (req, res, next) => {
 router.post('/logout', cors(), (req, res) => {
     
     if(!req.isAuthenticated()){
-        return res.status(401).json({ message: 'No existe ninguna sesión' });
+        return res.status(401).json({ message: 'No existe ninguna sesión activa' });
     }
     req.logout((err) => {
         if (err) {
