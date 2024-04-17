@@ -2,7 +2,7 @@ import cors from 'cors';
 import { body, validationResult } from 'express-validator';
 import { db } from '../../app.js';
 
-export const validateUser = [
+export const mongoValidateUser = [
     cors(),
     body('username').trim().notEmpty().withMessage('El nombre de usuario es obligatorio.').custom(async (value) => {
         const usersCollection = db.collection('users');

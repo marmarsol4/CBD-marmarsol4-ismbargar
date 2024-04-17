@@ -1,8 +1,9 @@
 import { Router } from 'express';
 import cors from 'cors';
 import passport from './config/passport.js';
-import { mongoRegisterUser } from './controllers/userController.js';
-import { validateUser } from './middlewares/userMiddleware.js';
+import { registerUser } from './controllers/userController.js';
+import { mongoValidateUser } from './middlewares/userMiddleware.js';
+import { mongooseMode, mongooseModeChange } from '../app.js';
 
 const router = new Router();
 
@@ -10,7 +11,8 @@ router.get('/', (req, res) => {
     res.send('Hello World');
 });
 
-router.post('/register', validateUser, mongoRegisterUser);
+router.post('/mongo/register', mongoValidateUser, registerUser);
+router.post('/mongoose/register', registerUser);
 
 router.post('/login', (req, res, next) => {
     passport.authenticate('local', (err, user, info) => {
@@ -43,6 +45,16 @@ router.post('/logout', cors(), (req, res) => {
         }
         return res.status(200).json({ message: 'Deslogueo exitoso' });
     });
+});
+
+router.post('/changeMode', (req, res) => {
+    const {mode} = req.body;
+    if (mode === 'mongoose') {
+        mongooseModeChange(true);
+    } else {
+        mongooseModeChange(false);
+    }
+    return res.status(200).json({ message: 'Modo cambiado'});
 });
 
 export default router;

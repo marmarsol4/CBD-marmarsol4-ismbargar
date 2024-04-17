@@ -1,13 +1,20 @@
 import passport from 'passport';
-import { Strategy as LocalStrategy } from 'passport-local';
-import { db } from '../../app.js';
-import { ObjectId } from 'mongodb';
 import bcrypt from 'bcrypt';
+import { Strategy as LocalStrategy } from 'passport-local';
+import { ObjectId } from 'mongodb';
+import { db, mongooseMode } from '../../app.js';
+import User from '../models/userSchema.js';
 
 passport.use(new LocalStrategy(
   async (username, password, done) => {
-    const codedPassword = await bcrypt.hash(password, 10);
-    const user = await db.collection('users').findOne({ username: username })
+
+    let user; 
+    if (mongooseMode) {
+      user = await User.findOne({ username: username });
+    } else {
+      user = await db.collection('users').findOne({ username: username })
+    }
+    
     if (!user) {
       return done(null, false, { message: 'No existe ninguna cuenta con este nombre de usuario' });
     }
@@ -23,8 +30,15 @@ passport.serializeUser(function(user, done) {
 });
   
 passport.deserializeUser(async function (id, done) {
-  const user = await db.collection('users').findOne({ _id: ObjectId.createFromHexString(id) });
+
+  let user;
+  if (mongooseMode) {
+    user = await User.findById(id);
+  } else{
+    user = await db.collection('users').findOne({ _id: ObjectId.createFromHexString(id) });
+  }
   done(null, user);
+  
 });
   
 export default passport;

@@ -1,15 +1,15 @@
 import express from 'express';  
 import cors from 'cors';
+import dotenv from 'dotenv';
+import session from 'express-session';
 import path from 'path';
 import history from 'connect-history-api-fallback';
 import { MongoClient } from 'mongodb';
-import router from "./src/router.js";
-import dotenv from 'dotenv';
-import session from 'express-session';
+import mongoose from 'mongoose';
+import router from './src/router.js';
 import passport from './src/config/passport.js';
 
-dotenv.config();
-
+dotenv.config();  
 const app = express();
 
 app.set('serverPort', process.env.SERVER_PORT || 3000);
@@ -44,11 +44,25 @@ app.use(history());
 const serverPort = app.get('serverPort');
 const mongoUri = process.env.MONGO_URI;
 
-const connectDb = async () => {
+const mongoConnectDb = async () => {
   const client = await new MongoClient(mongoUri).connect();
   return client.db(process.env.MONGO_DATABASE); 
 }
-export const db = await connectDb();
+export const db = await mongoConnectDb();
+await db.collection('users').drop(  );
+
+const mongooseConnectDb = async () => {
+  await mongoose.connect(mongoUri + "/" + process.env.MONGO_DATABASE);
+  const mongooseDb = mongoose.connection;
+  mongooseDb.on('error', console.error.bind(console, 'Error de conexión a MongoDB con Mongoose:'));
+  return mongooseDb;
+}
+export const mongooseDb = await mongooseConnectDb();
+
+export let mongooseMode = true; 
+export const mongooseModeChange = (mode) => {mongooseMode = mode;}
+
+export { mongoose };
 
 app.listen(serverPort, () => {
   console.log(`Servidor iniciado en el puerto ${serverPort}`);
