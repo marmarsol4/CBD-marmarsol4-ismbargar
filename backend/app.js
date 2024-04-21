@@ -49,15 +49,14 @@ const mongoConnectDb = async () => {
   return client.db(process.env.MONGO_DATABASE); 
 }
 export const db = await mongoConnectDb();
-await db.collection('users').drop(  );
+//await db.collection('users').drop();
 
 const mongooseConnectDb = async () => {
   await mongoose.connect(mongoUri + "/" + process.env.MONGO_DATABASE);
   const mongooseDb = mongoose.connection;
   mongooseDb.on('error', console.error.bind(console, 'Error de conexión a MongoDB con Mongoose:'));
-  return mongooseDb;
 }
-export const mongooseDb = await mongooseConnectDb();
+await mongooseConnectDb();
 
 export let mongooseMode = true; 
 export const mongooseModeChange = (mode) => {mongooseMode = mode;}

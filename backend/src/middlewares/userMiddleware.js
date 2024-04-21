@@ -28,3 +28,11 @@ export const mongoValidateUser = [
         }
     }
 ];
+
+export function isLogged(req, res, next) {
+    if (req.isAuthenticated()) {
+        return next();
+    } else {
+        res.status(401).send('No estás autenticado');
+    }
+}

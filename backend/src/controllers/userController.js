@@ -9,8 +9,9 @@ export const registerUser = async (req, res) => {
         const codedPassword = bcrypt.hashSync(password, 10);
 
         if (!mongooseMode) {
+            const favorites = [];
             const usersCollection = db.collection('users');
-            await usersCollection.insertOne({ username, email, password: codedPassword });
+            await usersCollection.insertOne({ username, email, password: codedPassword, favorites });
             return res.status(201).json({ message: 'Usuario registrado exitosamente' });  
         } else {
             const user = new User({ username, email, password });

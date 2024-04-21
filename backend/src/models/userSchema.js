@@ -15,7 +15,8 @@ const userSchema = new mongoose.Schema({
                 return /^[\w-]+(\.[\w-]+)*@([\w-]+\.)+[a-zA-Z]{2,7}$/.test(value);
             }, message: props => `${props.value} no es un correo electrónico válido.`
         }
-    }
+    },
+    favorites: [{ type: mongoose.Schema.Types.ObjectId, ref: 'File', default: [] }],
 });
 
 export default mongoose.model('User', userSchema);

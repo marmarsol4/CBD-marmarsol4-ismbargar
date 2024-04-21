@@ -1,18 +1,25 @@
 import { Router } from 'express';
 import cors from 'cors';
+import multer from 'multer';
+import dotenv from 'dotenv';
 import passport from './config/passport.js';
 import { registerUser } from './controllers/userController.js';
-import { mongoValidateUser } from './middlewares/userMiddleware.js';
-import { mongooseMode, mongooseModeChange } from '../app.js';
+import { mongoUploadFile, guardarArchivoEnMongoDB } from './controllers/fileController.js';
+import { mongoValidateUser, isLogged } from './middlewares/userMiddleware.js';
+import { mongooseModeChange } from '../app.js';
 
+dotenv.config();  
 const router = new Router();
+
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
 
 router.get('/', (req, res) => {
     res.send('Hello World');
 });
 
-router.post('/mongo/register', mongoValidateUser, registerUser);
-router.post('/mongoose/register', registerUser);
+router.post('/mongo/register', mongoValidateUser, registerUser); 
+router.post('/mongoose/register', registerUser);  
 
 router.post('/login', (req, res, next) => {
     passport.authenticate('local', (err, user, info) => {
@@ -56,5 +63,22 @@ router.post('/changeMode', (req, res) => {
     }
     return res.status(200).json({ message: 'Modo cambiado'});
 });
+
+router.post('/upload', isLogged, (req, res, next) => {
+    next(); 
+}, upload.single('file'), async (req, res) => {
+    const archivo = {
+      originalname: req.file.originalname,
+      buffer: req.file.buffer
+    };
+
+    try {
+        const fileId =await guardarArchivoEnMongoDB(archivo, req.user)
+        res.json({ success: true, fileId: fileId });
+    } catch(error) {
+        console.error('Error al guardar el archivo en MongoDB:', error);
+        res.status(500).json({ success: false, error: 'Error al guardar el archivo en MongoDB' });
+      };
+  });
 
 export default router;
