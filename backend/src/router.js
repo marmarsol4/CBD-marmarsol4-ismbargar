@@ -4,7 +4,7 @@ import multer from 'multer';
 import dotenv from 'dotenv';
 import passport from './config/passport.js';
 import { registerUser } from './controllers/userController.js';
-import { mongoUploadFile, guardarArchivoEnMongoDB } from './controllers/fileController.js';
+import { uploadFile } from './controllers/fileController.js';
 import { mongoValidateUser, isLogged } from './middlewares/userMiddleware.js';
 import { mongooseModeChange } from '../app.js';
 
@@ -56,12 +56,15 @@ router.post('/logout', cors(), (req, res) => {
 
 router.post('/changeMode', (req, res) => {
     const {mode} = req.body;
+    let message = "";
     if (mode === 'mongoose') {
         mongooseModeChange(true);
+        message = 'Modo cambiado a Mongoose';
     } else {
         mongooseModeChange(false);
+        message = 'Modo cambiado a MongoDB';
     }
-    return res.status(200).json({ message: 'Modo cambiado'});
+    return res.status(200).json({ message: message});
 });
 
 router.post('/upload', isLogged, (req, res, next) => {
@@ -73,7 +76,7 @@ router.post('/upload', isLogged, (req, res, next) => {
     };
 
     try {
-        const fileId =await guardarArchivoEnMongoDB(archivo, req.user)
+        const fileId = await uploadFile(archivo, req.user)
         res.json({ success: true, fileId: fileId });
     } catch(error) {
         console.error('Error al guardar el archivo en MongoDB:', error);
