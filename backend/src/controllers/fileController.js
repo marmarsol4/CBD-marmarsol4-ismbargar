@@ -58,8 +58,10 @@ export function deleteFile(fileId, user) {
                     reject(new Error('No se encontró el archivo guardado en MongoDB.'));
                     return;
                 }
-                const shared = file.sharedWith.filter(x => x.user==user)
-                if (file.owner.equals(user._id) || shared.length > 0 && shared[0].permission=='write') {
+                console.log(file.sharedWith[0].user, user._id)
+                const shared = file.sharedWith.filter(x => x.user.equals(user._id));
+                console.log(shared)
+                if (file.owner.equals(user._id) || shared.length > 0 && shared[0].perm=='write') {
                     await File.deleteOne({ _id: file._id });
                 } else {
                     reject(new Error('No tiene permisos para eliminar el archivo')); 
@@ -73,7 +75,7 @@ export function deleteFile(fileId, user) {
                 }
                 const shared = file.sharedWith.filter(x => x.user == user)
                 console.log(file.owner, user)
-                if (file.owner.equals(user._id) || shared.length > 0 && shared[0].permission=='write') {
+                if (file.owner.equals(user._id) || shared.length > 0 && shared[0].perm=='write') {
                     await db.collection("fs.files").deleteOne({ _id: ObjectId.createFromHexString(fileId) });
                 } else {
                     reject(new Error('No tiene permisos para eliminar el archivo')); 
@@ -84,4 +86,47 @@ export function deleteFile(fileId, user) {
             reject(error);
         }
     });
-} 
+}
+
+export function changePerms(fileId, userId, perm, user) {
+    return new Promise(async (resolve, reject) => {
+        try {
+            let file = undefined;
+            
+            if (mongooseMode) {
+                file = await File.findOne({ _id: fileId });
+                if (!file) {
+                    reject(new Error('No se encontró el archivo guardado en MongoDB'));
+                    return;
+                }
+                if (file.owner.equals(user._id)) {
+                    const shared = file.sharedWith.filter(x => x.user != userId);
+                    shared.push({ user: userId, perm: perm });
+                    file.sharedWith=shared;
+                    console.log(file.sharedWith)
+                    await file.save();
+                } else {
+                    reject(new Error('No tiene permisos para cambiar los permisos del archivo')); 
+                }
+            
+            } else {
+                file = await db.collection("fs.files").findOne({ _id: ObjectId.createFromHexString(fileId) });
+                if (!file) {
+                    reject(new Error('No se encontró el archivo guardado en MongoDB'));
+                    return;
+                }
+                if (file.owner.equals(user._id)) {
+                    const shared = file.sharedWith.filter(x => x.user != userId);
+                    shared.push({ user: userId, perm: perm });
+                    file.sharedWith=shared;
+                    await db.collection("fs.files").updateOne({ _id: ObjectId.createFromHexString(fileId) }, { $set: file });
+                } else {
+                    reject(new Error('No tiene permisos para cambiar los permisos del archivo')); 
+                }
+            }
+            resolve();
+        } catch (error) {
+            reject(error);
+        }
+    });
+}

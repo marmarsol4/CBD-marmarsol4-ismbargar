@@ -4,7 +4,7 @@ import multer from 'multer';
 import dotenv from 'dotenv';
 import passport from './config/passport.js';
 import { registerUser } from './controllers/userController.js';
-import { uploadFile, deleteFile } from './controllers/fileController.js';
+import { uploadFile, deleteFile, changePerms } from './controllers/fileController.js';
 import { mongoValidateUser, isLogged } from './middlewares/userMiddleware.js';
 import { mongooseMode, mongooseModeChange } from '../app.js';
 
@@ -94,5 +94,17 @@ router.delete('/file', isLogged, async (req, res) => {
         res.status(500).json({ success: false, error: 'Error al borrar el archivo con '+ mode + '. ' + error });
       };
 });
+
+router.put('/file', isLogged, async (req, res) => {
+    const { fileId, userId, perm } = req.body;
+
+    try {
+        await changePerms(fileId, userId, perm, req.user)
+        res.json({ success: true, message: 'Permisos del archivo '+ fileId + ' para el usuario '+ userId + ' cambiados a '+ perm});
+    } catch(error) {
+        const mode = mongooseMode?'Mongoose':'MongoDB';
+        res.status(500).json({ success: false, error: 'Error al guardar el archivo con '+ mode + '. ' + error });
+      };
+  });
 
 export default router;

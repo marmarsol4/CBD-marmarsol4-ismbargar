@@ -1,17 +1,9 @@
 import cors from 'cors';
 import { body, validationResult } from 'express-validator';
-import { db } from '../../app.js';
 
-export const mongoValidateFile = [
+export const mongoValidateFile = [ // TODO
     cors(),
-    body('filename').trim().notEmpty().withMessage('El nombre del archivo es obligatorio.'),
-    body('owner').trim().notEmpty().withMessage('El propietario del archivo es obligatorio.').custom(async (value) => {
-        const usersCollection = db.collection('users');
-        const existingUser = await usersCollection.findOne({ username: value });
-        if (!existingUser) {
-            return Promise.reject('Este usuario no existe y no puede ser propietario de un archivo.');
-        }
-    }),
+    body('perm').trim().notEmpty().withMessage('El permiso del archivo es obligatorio').isIn(['view', 'read', 'write']).withMessage('El permiso del archivo debe ser view, read o write.'),
 
     (req, res, next) => {
         const errors = validationResult(req);
@@ -22,4 +14,3 @@ export const mongoValidateFile = [
         }
     }
 ];
-

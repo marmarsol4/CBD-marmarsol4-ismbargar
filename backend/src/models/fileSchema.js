@@ -17,7 +17,7 @@ const fileSchema = new mongoose.Schema({
     sharedWith: [
       {
         user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, 
-        permissions: [{ type: String, enum: ['view', 'read', 'write'], default: 'view' }], // view es que esté visible pero sin acceder
+        perm: { type: String, enum: ['view', 'read', 'write'], default: 'view' }, // view es que esté visible pero sin acceder
       }
     ],
 });
