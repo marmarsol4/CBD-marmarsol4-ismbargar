@@ -1,6 +1,6 @@
 import { db, mongooseMode } from '../../app.js';
 import File from '../models/fileSchema.js';
-import { GridFSBucket } from 'mongodb';
+import { GridFSBucket, ObjectId } from 'mongodb';
 
 export function uploadFile(archivo, user) {
     return new Promise((resolve, reject) => {
@@ -16,11 +16,20 @@ export function uploadFile(archivo, user) {
                     file.contentType = file.filename.split('.').pop();
                     file.owner = user;
                     file.sharedWith = [];
+                    try {
+                        await file.validate();
+                    } catch (errors) {
+                        const errorsMessages = [];
+                        for (let fieldErrors in errors.errors) {
+                            errorsMessages.push(errors.errors[fieldErrors].message);
+                        }
+                        reject(errorsMessages);
+                    }
                     await file.save();
                 } else {
                     file = await db.collection("fs.files").findOne({ _id: stream.id });
                     file.contentType = file.filename.split('.').pop();
-                    file.owner = user;
+                    file.owner = user._id;
                     file.sharedWith = [];
                     await db.collection("fs.files").updateOne({ _id: stream.id }, { $set: file });
                 }
@@ -37,3 +46,42 @@ export function uploadFile(archivo, user) {
         stream.end(archivo.buffer);
     });
 }
+
+export function deleteFile(fileId, user) {
+    return new Promise(async (resolve, reject) => {
+        try {
+            let file = undefined;
+            
+            if (mongooseMode) {
+                file = await File.findOne({ _id: fileId });
+                if (!file) {
+                    reject(new Error('No se encontró el archivo guardado en MongoDB.'));
+                    return;
+                }
+                const shared = file.sharedWith.filter(x => x.user==user)
+                if (file.owner.equals(user._id) || shared.length > 0 && shared[0].permission=='write') {
+                    await File.deleteOne({ _id: file._id });
+                } else {
+                    reject(new Error('No tiene permisos para eliminar el archivo')); 
+                }
+            
+            } else {
+                file = await db.collection("fs.files").findOne({ _id: ObjectId.createFromHexString(fileId) });
+                if (!file) {
+                    reject(new Error('No se encontró el archivo guardado en MongoDB.'));
+                    return;
+                }
+                const shared = file.sharedWith.filter(x => x.user == user)
+                console.log(file.owner, user)
+                if (file.owner.equals(user._id) || shared.length > 0 && shared[0].permission=='write') {
+                    await db.collection("fs.files").deleteOne({ _id: ObjectId.createFromHexString(fileId) });
+                } else {
+                    reject(new Error('No tiene permisos para eliminar el archivo')); 
+                }
+            }
+            resolve();
+        } catch (error) {
+            reject(error);
+        }
+    });
+} 

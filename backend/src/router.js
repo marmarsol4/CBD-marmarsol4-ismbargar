@@ -4,9 +4,9 @@ import multer from 'multer';
 import dotenv from 'dotenv';
 import passport from './config/passport.js';
 import { registerUser } from './controllers/userController.js';
-import { uploadFile } from './controllers/fileController.js';
+import { uploadFile, deleteFile } from './controllers/fileController.js';
 import { mongoValidateUser, isLogged } from './middlewares/userMiddleware.js';
-import { mongooseModeChange } from '../app.js';
+import { mongooseMode, mongooseModeChange } from '../app.js';
 
 dotenv.config();  
 const router = new Router();
@@ -67,7 +67,7 @@ router.post('/changeMode', (req, res) => {
     return res.status(200).json({ message: message});
 });
 
-router.post('/upload', isLogged, (req, res, next) => {
+router.post('/file', isLogged, (req, res, next) => {
     next(); 
 }, upload.single('file'), async (req, res) => {
     const archivo = {
@@ -79,9 +79,20 @@ router.post('/upload', isLogged, (req, res, next) => {
         const fileId = await uploadFile(archivo, req.user)
         res.json({ success: true, fileId: fileId });
     } catch(error) {
-        console.error('Error al guardar el archivo en MongoDB:', error);
-        res.status(500).json({ success: false, error: 'Error al guardar el archivo en MongoDB' });
+        const mode = mongooseMode?'Mongoose':'MongoDB';
+        res.status(500).json({ success: false, error: 'Error al guardar el archivo con '+ mode + '. ' + error });
       };
   });
+
+router.delete('/file', isLogged, async (req, res) => {
+    const { id } = req.body;
+    try {
+        await deleteFile(id, req.user);
+        res.json({ success: true });
+    } catch(error) {
+        const mode = mongooseMode?'Mongoose':'MongoDB';
+        res.status(500).json({ success: false, error: 'Error al borrar el archivo con '+ mode + '. ' + error });
+      };
+});
 
 export default router;

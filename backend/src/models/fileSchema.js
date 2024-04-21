@@ -13,13 +13,13 @@ const fileSchema = new mongoose.Schema({
     length: { type: Number, required: true },
     chunkSize: { type: Number, required: true },
     uploadDate: { type: Date, default: Date.now },
-    owner: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    owner: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: [true, "Es obligatorio que el archivo tenga un dueño asociado"] },
     sharedWith: [
-        {
-          user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, 
-          permissions: [{ type: String, enum: ['view', 'read', 'write'], default: 'view' }], // view es que esté visible pero sin acceder
-        }
-      ],
+      {
+        user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, 
+        permissions: [{ type: String, enum: ['view', 'read', 'write'], default: 'view' }], // view es que esté visible pero sin acceder
+      }
+    ],
 });
 
 export default mongoose.model('File', fileSchema, 'fs.files');
