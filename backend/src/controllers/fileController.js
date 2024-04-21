@@ -29,7 +29,6 @@ export function uploadFile(archivo, user) {
                     reject(new Error('No se encontró el archivo guardado en MongoDB.'));
                     return;
                 }
-                console.log(file.owner);
                 resolve(file._id);
             } catch (error) {
                 reject(error);
