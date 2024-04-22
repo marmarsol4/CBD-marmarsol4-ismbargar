@@ -55,6 +55,7 @@ export default {
     
   <h2>Registro</h2>
   <form @submit.prevent="register">
+    <div class="form">
     <div class="form-column">  
       <div class="form-group">
           <label for="username">Usuario:</label>
@@ -76,6 +77,7 @@ export default {
           <label for="confirmPassword">Confirmar Contraseña:</label>
           <input type="password" id="confirmPassword" v-model="passwordMatch" required>
       </div>
+    </div>
     </div>
 
     <div style="display: flex; justify-content: center;">
@@ -108,6 +110,9 @@ export default {
   text-align: center;
 }
 
+.form {
+  display: flex;
+}
 
 .register-container form .form-group {
   display: flex;
