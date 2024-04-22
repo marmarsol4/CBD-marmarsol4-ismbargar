@@ -6,6 +6,7 @@ import passport from './config/passport.js';
 import { registerUser } from './controllers/userController.js';
 import { uploadFile, deleteFile, changePerms } from './controllers/fileController.js';
 import { mongoValidateUser, isLogged } from './middlewares/userMiddleware.js';
+import { mongoValidatePerm } from './middlewares/fileMiddleware.js';
 import { mongooseMode, mongooseModeChange } from '../app.js';
 
 dotenv.config();  
@@ -70,13 +71,16 @@ router.post('/changeMode', (req, res) => {
 router.post('/file', isLogged, (req, res, next) => {
     next(); 
 }, upload.single('file'), async (req, res) => {
-    const archivo = {
+    if (!req.file) {
+        return res.status(400).json({ success: false, error: 'No se ha enviado ningún archivo' });
+    }
+    const file = {
       originalname: req.file.originalname,
       buffer: req.file.buffer
     };
 
     try {
-        const fileId = await uploadFile(archivo, req.user)
+        const fileId = await uploadFile(file, req.user)
         res.json({ success: true, fileId: fileId });
     } catch(error) {
         const mode = mongooseMode?'Mongoose':'MongoDB';
@@ -95,7 +99,7 @@ router.delete('/file', isLogged, async (req, res) => {
       };
 });
 
-router.put('/file', isLogged, async (req, res) => {
+router.put('/file', isLogged,mongoValidatePerm, async (req, res) => {
     const { fileId, userId, perm } = req.body;
 
     try {

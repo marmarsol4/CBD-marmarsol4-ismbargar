@@ -1,7 +1,7 @@
-import { db, mongooseMode } from '../../app.js';
-import File from '../models/fileSchema.js';
 import { GridFSBucket, ObjectId } from 'mongodb';
 
+import { db, mongooseMode } from '../../app.js';
+import File from '../models/fileSchema.js';
 
 export function uploadFile(archivo, user) {
     return new Promise((resolve, reject) => {
@@ -36,7 +36,7 @@ export function uploadFile(archivo, user) {
                 }
                 
                 if (!file) {
-                    reject(new Error('No se encontró el archivo guardado en MongoDB.'));
+                    reject(new Error('No se encontró el archivo guardado en MongoDB'));
                     return;
                 }
                 resolve(file._id);
@@ -56,12 +56,10 @@ export function deleteFile(fileId, user) {
             if (mongooseMode) {
                 file = await File.findOne({ _id: fileId });
                 if (!file) {
-                    reject(new Error('No se encontró el archivo guardado en MongoDB.'));
+                    reject(new Error('No se encontró el archivo guardado en MongoDB'));
                     return;
                 }
-                console.log(file.sharedWith[0].user, user._id)
                 const shared = file.sharedWith.filter(x => x.user.equals(user._id));
-                console.log(shared)
                 if (file.owner.equals(user._id) || shared.length > 0 && shared[0].perm=='write') {
                     await File.deleteOne({ _id: file._id });
                 } else {
@@ -71,12 +69,11 @@ export function deleteFile(fileId, user) {
             } else {
                 file = await db.collection("fs.files").findOne({ _id: ObjectId.createFromHexString(fileId) });
                 if (!file) {
-                    reject(new Error('No se encontró el archivo guardado en MongoDB.'));
+                    reject(new Error('No se encontró el archivo guardado en MongoDB'));
                     return;
                 }
-                const shared = file.sharedWith.filter(x => x.user == user)
-                console.log(file.owner, user)
-                if (file.owner.equals(user._id) || shared.length > 0 && shared[0].perm=='write') {
+                const perm = file.sharedWith.some(x =>x.user == user._id && x.perm=='write');
+                if (perm || file.owner.equals(user._id)) {
                     await db.collection("fs.files").deleteOne({ _id: ObjectId.createFromHexString(fileId) });
                 } else {
                     reject(new Error('No tiene permisos para eliminar el archivo')); 
@@ -104,7 +101,6 @@ export function changePerms(fileId, userId, perm, user) {
                     const shared = file.sharedWith.filter(x => x.user != userId);
                     shared.push({ user: userId, perm: perm });
                     file.sharedWith=shared;
-                    console.log(file.sharedWith)
                     await file.save();
                 } else {
                     reject(new Error('No tiene permisos para cambiar los permisos del archivo')); 
@@ -157,4 +153,3 @@ export function downloadFile(fileId) {
         }
     });
 }
-

@@ -58,7 +58,7 @@ const mongooseConnectDb = async () => {
 }
 await mongooseConnectDb();
 
-export let mongooseMode = true; 
+export let mongooseMode = false; 
 export const mongooseModeChange = (mode) => {mongooseMode = mode;}
 
 export { mongoose };
