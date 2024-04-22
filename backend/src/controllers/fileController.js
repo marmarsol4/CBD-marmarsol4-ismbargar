@@ -2,6 +2,7 @@ import { db, mongooseMode } from '../../app.js';
 import File from '../models/fileSchema.js';
 import { GridFSBucket, ObjectId } from 'mongodb';
 
+
 export function uploadFile(archivo, user) {
     return new Promise((resolve, reject) => {
         const bucket = new GridFSBucket(db);
@@ -130,3 +131,30 @@ export function changePerms(fileId, userId, perm, user) {
         }
     });
 }
+
+export function downloadFile(fileId) {
+    return new Promise(async (resolve, reject) => {
+        try {
+            let file = undefined;
+            if (mongooseMode) {
+                file = await File.findOne({ _id: fileId });
+            } else {
+                file = await db.collection("fs.files").findOne({ _id: ObjectId.createFromHexString(fileId) });
+            }
+            if (!file) {
+                reject(new Error('No se encontró el archivo guardado en MongoDB'));
+                return;
+            }
+            if (user && user._id && (file.owner.equals(user._id) || (shared.length > 0 && shared[0].perm == 'write'))) {
+                const bucket = new GridFSBucket(db);
+                const downloadStream = bucket.openDownloadStream(fileId);
+                resolve(downloadStream);
+            } else {
+                reject(new Error('No tiene permisos para descargar el archivo'));
+            }
+        } catch (error) {
+            reject(error);
+        }
+    });
+}
+
