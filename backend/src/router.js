@@ -4,7 +4,7 @@ import multer from 'multer';
 import dotenv from 'dotenv';
 import passport from './config/passport.js';
 import { registerUser } from './controllers/userController.js';
-import { uploadFile, deleteFile, changePerms, downloadFile } from './controllers/fileController.js';
+import { getMyFiles, uploadFile, deleteFile, changePerms, downloadFile } from './controllers/fileController.js';
 import { mongoValidateUser, isLogged } from './middlewares/userMiddleware.js';
 import { mongoValidatePerm } from './middlewares/fileMiddleware.js';
 import { mongooseMode, mongooseModeChange } from '../app.js';
@@ -14,10 +14,6 @@ const router = new Router();
 
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
-
-router.get('/', (req, res) => {
-    res.send('Hello World');
-});
 
 router.post('/mongo/register', mongoValidateUser, registerUser); 
 router.post('/mongoose/register', registerUser);  
@@ -66,6 +62,16 @@ router.post('/changeMode', (req, res) => {
         message = 'Modo cambiado a MongoDB';
     }
     return res.status(200).json({ message: message});
+});
+
+router.get('/file', isLogged, async (req, res) => {
+    try {
+        const files = await getMyFiles(req.user);
+        res.json({ success: true, files: files });
+    } catch(error) {
+        const mode = mongooseMode?'Mongoose':'MongoDB';
+        res.status(500).json({ success: false, error: 'Error al obtener los archivos con '+ mode + '. ' + error });
+      };
 });
 
 router.post('/file', isLogged, (req, res, next) => {
@@ -117,8 +123,6 @@ router.post('/file/download', isLogged, async (req, res) => {
         const downloadStream = await downloadFile(id, req.user);
         res.setHeader('Content-disposition', 'attachment; filename=archivo_descargado');
         res.setHeader('Content-type', 'application/octet-stream');
-
-        // Establecer el flujo de descarga como cuerpo de la respuesta
         downloadStream.pipe(res);
     } catch(error) {
         const mode = mongooseMode?'Mongoose':'MongoDB';
@@ -126,6 +130,5 @@ router.post('/file/download', isLogged, async (req, res) => {
       };
 }
 );
-
 
 export default router;

@@ -2,6 +2,22 @@ import { GridFSBucket, ObjectId } from 'mongodb';
 import { db, mongooseMode } from '../../app.js';
 import File from '../models/fileSchema.js';
 
+export function getMyFiles(user) {
+    return new Promise(async (resolve, reject) => {
+        try {
+            let files = undefined;
+            if (mongooseMode) {
+                files = await File.find({ $or: [{ owner: user._id }, { 'sharedWith.user': user._id }] });
+            } else {
+                files = await db.collection("fs.files").find({ $or: [{ owner: user._id }, { 'sharedWith.user': user._id }] }).toArray();
+            }
+            resolve(files);
+        } catch (error) {
+            reject(error);
+        }
+    });
+}
+
 export function uploadFile(archivo, user) {
     return new Promise((resolve, reject) => {
         const bucket = new GridFSBucket(db);

@@ -28,19 +28,6 @@ app.use(passport.session());
 app.use(router);
 app.use(history());
 
-// const routes = router.stack
-//   .filter(layer => layer.route)
-//   .map(layer => ({
-//     method: Object.keys(layer.route.methods)[0].toUpperCase(),
-//     path: layer.route.path
-//   }));
-
-// // Imprimir las rutas
-// console.log('Rutas registradas:');
-// routes.forEach(route => {
-//   console.log(`${route.method} ${route.path}`);
-// });
-
 const serverPort = app.get('serverPort');
 const mongoUri = process.env.MONGO_URI;
 
