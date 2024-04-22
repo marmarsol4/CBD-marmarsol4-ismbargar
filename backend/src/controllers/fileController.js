@@ -1,5 +1,4 @@
 import { GridFSBucket, ObjectId } from 'mongodb';
-
 import { db, mongooseMode } from '../../app.js';
 import File from '../models/fileSchema.js';
 
@@ -59,8 +58,8 @@ export function deleteFile(fileId, user) {
                     reject(new Error('No se encontró el archivo guardado en MongoDB'));
                     return;
                 }
-                const shared = file.sharedWith.filter(x => x.user.equals(user._id));
-                if (file.owner.equals(user._id) || shared.length > 0 && shared[0].perm=='write') {
+                const perm = file.sharedWith.some(x =>x.user == user._id && x.perm=='write');
+                if (perm || file.owner.equals(user._id)) {
                     await File.deleteOne({ _id: file._id });
                 } else {
                     reject(new Error('No tiene permisos para eliminar el archivo')); 
@@ -128,7 +127,7 @@ export function changePerms(fileId, userId, perm, user) {
     });
 }
 
-export function downloadFile(fileId) {
+export function downloadFile(fileId, user) {
     return new Promise(async (resolve, reject) => {
         try {
             let file = undefined;
@@ -141,9 +140,10 @@ export function downloadFile(fileId) {
                 reject(new Error('No se encontró el archivo guardado en MongoDB'));
                 return;
             }
-            if (user && user._id && (file.owner.equals(user._id) || (shared.length > 0 && shared[0].perm == 'write'))) {
+            const perm = file.sharedWith.some(x => x.user.equals(user._id) && (x.perm=='write' || x.perm=='read'));
+            if (user && user._id && (file.owner.equals(user._id) || perm)) {
                 const bucket = new GridFSBucket(db);
-                const downloadStream = bucket.openDownloadStream(fileId);
+                const downloadStream = bucket.openDownloadStream(ObjectId.createFromHexString(fileId));
                 resolve(downloadStream);
             } else {
                 reject(new Error('No tiene permisos para descargar el archivo'));

@@ -4,7 +4,7 @@ import multer from 'multer';
 import dotenv from 'dotenv';
 import passport from './config/passport.js';
 import { registerUser } from './controllers/userController.js';
-import { uploadFile, deleteFile, changePerms } from './controllers/fileController.js';
+import { uploadFile, deleteFile, changePerms, downloadFile } from './controllers/fileController.js';
 import { mongoValidateUser, isLogged } from './middlewares/userMiddleware.js';
 import { mongoValidatePerm } from './middlewares/fileMiddleware.js';
 import { mongooseMode, mongooseModeChange } from '../app.js';
@@ -110,5 +110,22 @@ router.put('/file', isLogged,mongoValidatePerm, async (req, res) => {
         res.status(500).json({ success: false, error: 'Error al guardar el archivo con '+ mode + '. ' + error });
       };
   });
+
+router.post('/file/download', isLogged, async (req, res) => {
+    const { id } = req.body;
+    try {
+        const downloadStream = await downloadFile(id, req.user);
+        res.setHeader('Content-disposition', 'attachment; filename=archivo_descargado');
+        res.setHeader('Content-type', 'application/octet-stream');
+
+        // Establecer el flujo de descarga como cuerpo de la respuesta
+        downloadStream.pipe(res);
+    } catch(error) {
+        const mode = mongooseMode?'Mongoose':'MongoDB';
+        res.status(500).json({ success: false, error: 'Error al obtener el archivo con '+ mode + '. ' + error });
+      };
+}
+);
+
 
 export default router;
