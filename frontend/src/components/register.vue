@@ -1,5 +1,5 @@
 <script>
-import { ref, onMounted } from 'vue';
+import { ref, watch } from 'vue';
 export default {
   
     setup() {  
@@ -14,15 +14,18 @@ export default {
     const error = ref('');
 
     const register = () => {
-      fetch(import.meta.env.VITE_API_URL + '/register', {
+        if (error.value) {
+            return;
+        }
+      fetch(import.meta.env.VITE_BACKEND_URL + '/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           username: user.value.username,
           password: user.value.password,
           email: user.value.email,
-        
-        }).then(response => {
+        })
+      }).then(response => {
             if (response.status === 201) {
             } else {
                 throw new Error('Error al registrar');
@@ -30,20 +33,21 @@ export default {
         }).catch(error => {
             console.error(error);
         })
-      });
     };
 
-    const confirmPassword = () => {
-        if (user.value.password !== passwordMatch.value) {
-            alert('Las contraseñas no coinciden');
+
+    watch(passwordMatch, (value) => {
+        if (value !== user.value.password && value !== '') {
+            error.value = 'Las contraseñas no coinciden';
+        } else {
+            error.value = '';
         }
-    };
+    });
 
     return {
         user,
         passwordMatch,
         error,
-        confirmPassword,
         register,
     }
   }
@@ -52,11 +56,10 @@ export default {
  
 <template>
   <div class="register-container">
-    
   <h2>Registro</h2>
   <form @submit.prevent="register">
     <div class="form">
-    <div class="form-column">  
+    <div class="form-column" style="margin-right: 2%;">  
       <div class="form-group">
           <label for="username">Usuario:</label>
           <input type="text" id="username" v-model="user.username" required>
@@ -67,7 +70,7 @@ export default {
       </div>
     </div>
 
-    <div class="form-column">
+    <div class="form-column" style="margin-left: 2%;">
       <div class="form-group">
           <label for="email">Email:</label>
           <input type="email" id="email" v-model="user.email" required>
@@ -85,23 +88,20 @@ export default {
     </div>
       
     </form>
-
-  Ya tienes cuenta<button type="button" @click="login">Iniciar Sesión</button>
-    
     <p v-if="error" class="error">{{ error }}</p>
   </div>
+  
+  ¿Ya tienes cuenta? <button type="button" @click="$router.push('/login')" style="margin:1%">Iniciar Sesión</button>
 </template>
 
-<style>
+<style scoped>
 .register-container {
-  max-width: 400px;
-  margin: 0 auto;
-  padding: 20px;
+  padding: 2%;
   border: 1px solid #ccc;
   border-radius: 5px;
 }
 
-.register-container form{
+.register-container form {
   display: flex;
   flex-direction: column;
 }
@@ -112,14 +112,13 @@ export default {
 
 .form {
   display: flex;
+  justify-content: center;
 }
 
 .register-container form .form-group {
   display: flex;
   flex-direction: column; /* Hace que los hijos directos de .form-group se muestren en el mismo nivel */
 }
-
-
 
 .register-container form .form-group input {
   padding: 5px;
@@ -130,16 +129,9 @@ export default {
 }
 
 .register-container form button {
-  padding: 5px;
-  border-radius: 5px;
-  border: 1px solid #ccc;
-  cursor: pointer;
-  justify-self: center; /* Centra los botones horizontalmente */
+  margin: 5%;
 }
 
-.register-container form button:hover {
-  background-color: #e0e0e0;
-}
 
 .register-container form .error {
   color: red;

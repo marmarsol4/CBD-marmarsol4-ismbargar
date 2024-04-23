@@ -16,7 +16,14 @@ const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
 router.post('/mongo/register', mongoValidateUser, registerUser); 
-router.post('/mongoose/register', registerUser);  
+router.post('/mongoose/register', registerUser);
+router.post('/register',(req, res,next) => {
+    if (mongooseMode) {
+        next('route');
+    } else {
+        next();
+    }
+},mongoValidateUser,registerUser);  
 
 router.post('/login', (req, res, next) => {
     passport.authenticate('local', (err, user, info) => {
