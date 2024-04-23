@@ -28,12 +28,14 @@ a {
   color: #646cff;
   text-decoration: inherit;
 }
+
 a:hover {
   color: #535bf2;
 }
 
- body {
+body {
   margin: 0;
+  height: 100%;
   display: flex;
   place-items: center;
 } 
@@ -50,13 +52,15 @@ button {
   font-size: 1em;
   font-weight: 500;
   font-family: inherit;
-  background-color: #1a1a1a;
+  background-color: #C8B1E4;
+  color:black;
   cursor: pointer;
-  transition: border-color 0.25s;
 }
+
 button:hover {
-  border-color: #646cff;
+  border-color: #532B88;
 }
+
 button:focus,
 button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
@@ -66,24 +70,24 @@ button:focus-visible {
   padding: 2em;
 }
 
+.container {
+  text-align: center;
+  display: flex;
+  justify-content: center;
+  margin: auto;
+}
+
+.gradient-text {
+  background: linear-gradient(90deg, #646cff, #C8B1E4);
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
 #app {
   max-width: 1280px;
   margin: 0 auto;
   padding: 2rem;
   text-align: center;
-  width:100vw;
-  height:100%;
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
+  width: 100vw;
+  height: 100%; /* 90vh me va a mí bien para ocupar casi toda la pantalla*/
 }

@@ -28,6 +28,12 @@ app.use(passport.session());
 app.use(router);
 app.use(history());
 
+
+app.use(passport.session());
+
+app.use(router);
+app.use(history());
+
 const serverPort = app.get('serverPort');
 const mongoUri = process.env.MONGO_URI;
 
@@ -45,7 +51,7 @@ const mongooseConnectDb = async () => {
 }
 await mongooseConnectDb();
 
-export let mongooseMode = true; 
+export let mongooseMode = false; 
 export const mongooseModeChange = (mode) => {mongooseMode = mode;}
 
 export { mongoose };

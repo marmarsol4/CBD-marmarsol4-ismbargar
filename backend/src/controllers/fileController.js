@@ -18,6 +18,9 @@ export function getMyFiles(user) {
     });
 }
 
+import { db, mongooseMode } from '../../app.js';
+import File from '../models/fileSchema.js';
+
 export function uploadFile(archivo, user) {
     return new Promise((resolve, reject) => {
         const bucket = new GridFSBucket(db);
