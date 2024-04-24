@@ -8,7 +8,7 @@ export const mongoValidateUser = [
     body('username').trim().notEmpty().withMessage('El nombre de usuario es obligatorio').custom(async (value) => {
         
         if (!/^[a-zA-Z0-9_]{4,16}$/.test(value)) {
-            return Promise.reject(`El nombre de usuario debe tener entre 4 y 16 caracteres y solo puede contener letras, números y guiones bajos`);
+            return Promise.reject(`El nombre de usuario debe tener entre 4 y 16 caracteres y sólo puede contener letras, números y guiones bajos`);
         }
         const usersCollection = db.collection('users');
         const existingUser = await usersCollection.findOne({ username: value });
@@ -18,7 +18,7 @@ export const mongoValidateUser = [
     }),
     body('email').trim().notEmpty().isEmail().withMessage('El correo electrónico no es válido').custom(async (value) => {
         if (!/^[\w-]+(\.[\w-]+)*@([\w-]+\.)+[a-zA-Z]{2,7}$/.test(value)){
-            return Promise.reject(`El correo proporcionado no es un correo electrónico válido.`);
+            return Promise.reject(`El correo proporcionado no es un correo electrónico válido`);
         }
         const usersCollection = db.collection('users');
         const existingMail = await usersCollection.findOne({ email: value });

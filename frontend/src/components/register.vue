@@ -14,13 +14,14 @@ export default {
     const router = useRouter();
     
     const passwordMatch = ref("");
-    const error = ref("");
+    const errorMessage = ref([]);
     const successMessage = ref("");
 
     const register = () => {
-      if (error.value) {
+      if (errorMessage.value.includes("Las contraseñas no coinciden")) {
         return;
       }
+      errorMessage.value = [];
       fetch(import.meta.env.VITE_BACKEND_URL + "/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -37,26 +38,36 @@ export default {
               router.push("/login");
             }, 2000);
           } else {
+            errorMessage.value = [];
+            response.json().then((data) => {
+              data.errors.forEach((error) => {
+                errorMessage.value.push(error.msg);
+            });
             throw new Error("Error al registrar");
+            })
           }
         })
         .catch((error) => {
           console.error(error);
         });
-    };
+      };
 
     watch(passwordMatch, (value) => {
       if (value !== user.value.password && value !== "") {
-        error.value = "Las contraseñas no coinciden";
+        if (!errorMessage.value.includes("Las contraseñas no coinciden")) {
+          errorMessage.value.unshift("Las contraseñas no coinciden");
+        }
       } else {
-        error.value = "";
+        errorMessage.value = errorMessage.value.filter(
+          (error) => error !== "Las contraseñas no coinciden"
+        );
       }
     });
 
     return {
       user,
       passwordMatch,
-      error,
+      errorMessage,
       successMessage,
       register,
     };
@@ -108,12 +119,11 @@ export default {
         <div style="display: flex; justify-content: center">
           <button type="submit">Registrarse</button>
         </div>
-        <p v-if="error" class="error">{{ error }}</p>
+        <div v-if="errorMessage.length !== 0" class="error">
+          <p v-for="error in errorMessage">{{ error }}</p>
+        </div>
       </form> 
     </div>
-  </div>
-  <div>
-    ¿Ya tienes cuenta? <button type="button" @click="$router.push('/login')" style="margin: 2%">Iniciar Sesión</button>
   </div>
   <div>
     ¿Ya tienes cuenta? <button type="button" @click="$router.push('/login')" style="margin: 2%">Iniciar Sesión</button>
@@ -190,6 +200,7 @@ export default {
   background-color: rgb(151, 47, 47);
   border-radius: 10px;
   padding: 1px 10px;
+  margin-top: 15px;
 }
 
 </style>

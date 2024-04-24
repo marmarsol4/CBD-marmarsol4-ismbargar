@@ -1,5 +1,7 @@
 <script>
-import { ref, watch } from 'vue';
+import { ref } from 'vue';
+import { useRouter } from 'vue-router';
+
 export default {
   
     setup() {  
@@ -8,6 +10,8 @@ export default {
         username: '',
         password: '',
     });
+
+    const router = useRouter();
 
     const error = ref('');
 
@@ -21,7 +25,8 @@ export default {
           password: user.value.password,
         })
       }).then(response => {
-            if (response.status === 201) {
+            if (response.status === 200) {
+              router.push('/');
             } else {
                 error.value = 'Error al iniciar sesión';
             }

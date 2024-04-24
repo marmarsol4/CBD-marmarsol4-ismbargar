@@ -3,6 +3,10 @@ import { ref, onMounted } from 'vue';
 export default {
   setup() {       
     
+    const myFiles = ref([]);
+
+    
+
     return {
         
     }
