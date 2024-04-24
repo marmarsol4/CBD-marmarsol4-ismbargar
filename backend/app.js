@@ -3,20 +3,22 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import session from 'express-session';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import history from 'connect-history-api-fallback';
 import { MongoClient } from 'mongodb';
 import mongoose from 'mongoose';
 import router from './src/router.js';
 import passport from './src/config/passport.js';
-
+import {corsOptions} from './src/config/cors.js';
 dotenv.config();  
 const app = express();
 
 app.set('serverPort', process.env.SERVER_PORT || 3000);
-app.use(cors());
+
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-//app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(path.dirname(fileURLToPath(import.meta.url)), 'public')));
 app.use(session({
   secret: process.env.SESSION_SECRET,
   resave: false,

@@ -12,7 +12,6 @@ export default {
     });
 
     const router = useRouter();
-    
     const passwordMatch = ref("");
     const errorMessage = ref([]);
     const successMessage = ref("");

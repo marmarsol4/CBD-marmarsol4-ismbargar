@@ -12,7 +12,6 @@ export default {
     });
 
     const router = useRouter();
-
     const error = ref('');
 
     const login = () => {
@@ -20,6 +19,7 @@ export default {
       fetch(import.meta.env.VITE_BACKEND_URL + '/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: "include",
         body: JSON.stringify({
           username: user.value.username,
           password: user.value.password,
@@ -102,7 +102,7 @@ export default {
 
 .login-container form .form-group {
   display: flex;
-  flex-direction: column; /* Hace que los hijos directos de .form-group se muestren en el mismo nivel */
+  flex-direction: column;
 }
 
 .form-column{
@@ -115,8 +115,8 @@ export default {
   background-color: #f9f9f9;
   border: 1px solid #f9f9f9;
   color: black;
-  width: 100%; /* Opcional: asegura que los inputs ocupen todo el ancho disponible */
-  box-sizing: border-box; /* Asegura que el padding no aumente el ancho del input */
+  width: 100%; 
+  box-sizing: border-box; 
 }
 
 .login-container form button {

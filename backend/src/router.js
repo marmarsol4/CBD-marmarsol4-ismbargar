@@ -15,7 +15,7 @@ const router = new Router();
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
-router.post('/register', mongoValidateUser, registerUser);
+router.post('/register', cors(), mongoValidateUser, registerUser);
 
 router.post('/login', (req, res, next) => {
     passport.authenticate('local', (err, user, info) => {
@@ -37,7 +37,7 @@ router.post('/login', (req, res, next) => {
     })(req, res, next);
 });
 
-router.post('/logout', cors(), (req, res) => {
+router.post('/logout', (req, res) => {
     
     if(!req.isAuthenticated()){
         return res.status(401).json({ message: 'No existe ninguna sesión activa' });
@@ -50,7 +50,7 @@ router.post('/logout', cors(), (req, res) => {
     });
 });
 
-router.post('/changeMode', (req, res) => {
+router.post('/changeMode', cors(), (req, res) => {
     const {mode} = req.body;
     let message = "";
     if (mode === 'mongoose') {
@@ -63,9 +63,11 @@ router.post('/changeMode', (req, res) => {
     return res.status(200).json({ message: message});
 });
 
-router.get('/file', isLogged, async (req, res) => {
+router.get('/file',  isLogged, async (req, res) => {
     try {
         const files = await getMyFiles(req.user);
+        console.log(req.user)
+        console.log(files);
         res.json({ success: true, files: files });
     } catch(error) {
         const mode = mongooseMode?'Mongoose':'MongoDB';
@@ -73,7 +75,7 @@ router.get('/file', isLogged, async (req, res) => {
       };
 });
 
-router.post('/file', isLogged, (req, res, next) => {
+router.post('/file', cors(), isLogged, (req, res, next) => {
     next(); 
 }, upload.single('file'), async (req, res) => {
     if (!req.file) {
@@ -93,7 +95,7 @@ router.post('/file', isLogged, (req, res, next) => {
       };
   });
 
-router.delete('/file', isLogged, async (req, res) => {
+router.delete('/file', cors(), isLogged, async (req, res) => {
     const { id } = req.body;
     try {
         await deleteFile(id, req.user);
@@ -104,7 +106,7 @@ router.delete('/file', isLogged, async (req, res) => {
       };
 });
 
-router.put('/file', isLogged,mongoValidatePerm, async (req, res) => {
+router.put('/file', cors(), isLogged, mongoValidatePerm, async (req, res) => {
     const { fileId, userId, perm } = req.body;
 
     try {
@@ -116,7 +118,7 @@ router.put('/file', isLogged,mongoValidatePerm, async (req, res) => {
       };
   });
 
-router.post('/file/download', isLogged, async (req, res) => {
+router.post('/file/download', cors(), isLogged, async (req, res) => {
     const { id } = req.body;
     try {
         const downloadStream = await downloadFile(id, req.user);
