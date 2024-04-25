@@ -52,6 +52,6 @@ export function isLogged(req, res, next) {
     if (req.isAuthenticated()) {
         return next();
     } else {
-        res.status(401).send('No estás autenticado');
+        res.status(401).json({ message:'No estás autenticado' });
     }
 }

@@ -7,9 +7,17 @@ export function getMyFiles(user) {
         try {
             let files = undefined;
             if (mongooseMode) {
-                files = await File.find({ $or: [{ owner: user._id }, { 'sharedWith.user': user._id }] });
+                files = await File.find({ $or: [{ owner: user._id }, { 'sharedWith.user': user._id }] }).populate('owner').populate('sharedWith.user');
             } else {
                 files = await db.collection("fs.files").find({ $or: [{ owner: user._id }, { 'sharedWith.user': user._id }] }).toArray();
+                files = await Promise.all(files.map(async file => {
+                    file.owner = await db.collection('users').findOne({ _id: file.owner });
+                    file.sharedWith = file.sharedWith.map(async x => {
+                        x.user = await  db.collection('users').findOne({ _id: x.user });
+                        return x;
+                    });
+                    return file;
+                }));
             }
             resolve(files);
         } catch (error) {

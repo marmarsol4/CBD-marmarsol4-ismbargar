@@ -66,13 +66,11 @@ router.post('/changeMode', cors(), (req, res) => {
 router.get('/file',  isLogged, async (req, res) => {
     try {
         const files = await getMyFiles(req.user);
-        console.log(req.user)
-        console.log(files);
         res.json({ success: true, files: files });
     } catch(error) {
         const mode = mongooseMode?'Mongoose':'MongoDB';
         res.status(500).json({ success: false, error: 'Error al obtener los archivos con '+ mode + '. ' + error });
-      };
+    };
 });
 
 router.post('/file', cors(), isLogged, (req, res, next) => {

@@ -1,6 +1,5 @@
 const allowedOrigins = [
     'http://localhost:5173',
-    "https://vrk28fp0-5173.uks1.devtunnels.ms",
     'chrome-extension://eipdnjedkpcnlmmdfdkgfpljanehloah'
   ];
   
