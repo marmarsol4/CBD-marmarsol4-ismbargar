@@ -1,6 +1,7 @@
 import { GridFSBucket, ObjectId } from 'mongodb';
 import { db, mongooseMode } from '../../app.js';
 import File from '../models/fileSchema.js';
+import User from '../models/userSchema.js';
 
 export function getMyFiles(user) {
     return new Promise(async (resolve, reject) => {
@@ -12,10 +13,10 @@ export function getMyFiles(user) {
                 files = await db.collection("fs.files").find({ $or: [{ owner: user._id }, { 'sharedWith.user': user._id }] }).toArray();
                 files = await Promise.all(files.map(async file => {
                     file.owner = await db.collection('users').findOne({ _id: file.owner });
-                    file.sharedWith = file.sharedWith.map(async x => {
-                        x.user = await  db.collection('users').findOne({ _id: x.user });
+                    file.sharedWith = await Promise.all(file.sharedWith.map(async x => {
+                        x.user = await db.collection('users').findOne({ _id: x.user });
                         return x;
-                    });
+                    }));
                     return file;
                 }));
             }
@@ -109,7 +110,7 @@ export function deleteFile(fileId, user) {
     });
 }
 
-export function changePerms(fileId, userId, perm, user) {
+export function changePerms(fileId, username, perm, user) {
     return new Promise(async (resolve, reject) => {
         try {
             let file = undefined;
@@ -121,8 +122,15 @@ export function changePerms(fileId, userId, perm, user) {
                     return;
                 }
                 if (file.owner.equals(user._id)) {
-                    const shared = file.sharedWith.filter(x => x.user != userId);
-                    shared.push({ user: userId, perm: perm });
+                    const userId = await User.findOne({username: username}).then(x=>x._id);
+                    if (!userId) {
+                        reject(new Error('El usuario con el que se quiere compartir el archivo no existe'));
+                        return;
+                    }
+                    const shared = file.sharedWith.filter(x => !x.user.equals(userId));
+                    if (perm != 'none'){
+                        shared.push({ user: userId, perm: perm });
+                    }
                     file.sharedWith=shared;
                     await file.save();
                 } else {
@@ -136,8 +144,15 @@ export function changePerms(fileId, userId, perm, user) {
                     return;
                 }
                 if (file.owner.equals(user._id)) {
-                    const shared = file.sharedWith.filter(x => x.user != userId);
-                    shared.push({ user: userId, perm: perm });
+                    const userId = await db.collection('users').findOne({username: username}).then(x=>x._id);
+                    if (!userId) {
+                        reject(new Error('El usuario con el que se quiere compartir el archivo no existe'));
+                        return;
+                    }
+                    const shared = file.sharedWith.filter(x => !x.user.equals(userId));
+                    if (perm != 'none'){
+                        shared.push({ user: userId, perm: perm });
+                    }
                     file.sharedWith=shared;
                     await db.collection("fs.files").updateOne({ _id: ObjectId.createFromHexString(fileId) }, { $set: file });
                 } else {
@@ -177,3 +192,43 @@ export function downloadFile(fileId, user) {
         }
     });
 }
+
+export function toggleFavorite(fileId, user) {
+    return new Promise(async (resolve, reject) => {
+        try {
+            let liked = undefined;
+            let file = undefined;
+            let dbUser = undefined;
+            if (mongooseMode) {
+                file = await File.findOne({ _id: fileId });
+                dbUser = await User.findOne({ _id: user._id }); 
+            } else {
+                file = await db.collection("fs.files").findOne({ _id: ObjectId.createFromHexString(fileId) });
+                dbUser = await db.collection('users').findOne({ _id: user._id }); 
+            }
+
+            if (!file) {
+                reject(new Error('No se encontró el archivo guardado en MongoDB'));
+                return;
+            }
+
+            if (dbUser.favorites.includes(fileId)) {
+                dbUser.favorites = dbUser.favorites.filter(x => x != fileId);
+                liked = false;
+            } else {
+                dbUser.favorites.push(fileId);
+                liked = true;
+            }
+            
+            if (mongooseMode) {
+                await User.updateOne({ _id: user._id }, dbUser);
+            } else {
+                await db.collection('users').updateOne({ _id: dbUser._id }, { $set: dbUser });
+            }
+            resolve(liked);
+            
+        } catch (error) {
+            reject(error);
+        }
+    });
+};

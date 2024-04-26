@@ -4,7 +4,6 @@ import { db } from '../../app.js';
 import { mongooseMode } from '../../app.js';
 
 export const mongoValidateUser = [
-    cors(),
     body('username').trim().notEmpty().withMessage('El nombre de usuario es obligatorio').custom(async (value) => {
         
         if (!/^[a-zA-Z0-9_]{4,16}$/.test(value)) {

@@ -1,5 +1,4 @@
-import express from 'express';  
-import cors from 'cors';
+import express from 'express';
 import dotenv from 'dotenv';
 import session from 'express-session';
 import path from 'path';
@@ -9,13 +8,14 @@ import { MongoClient } from 'mongodb';
 import mongoose from 'mongoose';
 import router from './src/router.js';
 import passport from './src/config/passport.js';
-import {corsOptions} from './src/config/cors.js';
+import cors from './src/config/cors.js';
+
 dotenv.config();  
 const app = express();
 
 app.set('serverPort', process.env.SERVER_PORT || 3000);
 
-app.use(cors(corsOptions));
+app.use(cors);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(path.dirname(fileURLToPath(import.meta.url)), 'public')));
@@ -29,7 +29,6 @@ app.use(passport.session());
 
 app.use(router);
 app.use(history());
-
 
 app.use(passport.session());
 

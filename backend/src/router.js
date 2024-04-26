@@ -1,10 +1,9 @@
 import { Router } from 'express';
-import cors from 'cors';
 import multer from 'multer';
 import dotenv from 'dotenv';
 import passport from './config/passport.js';
 import { registerUser } from './controllers/userController.js';
-import { getMyFiles, uploadFile, deleteFile, changePerms, downloadFile } from './controllers/fileController.js';
+import { getMyFiles, uploadFile, deleteFile, changePerms, downloadFile, toggleFavorite } from './controllers/fileController.js';
 import { mongoValidateUser, isLogged } from './middlewares/userMiddleware.js';
 import { mongoValidatePerm } from './middlewares/fileMiddleware.js';
 import { mongooseMode, mongooseModeChange } from '../app.js';
@@ -15,7 +14,7 @@ const router = new Router();
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
-router.post('/register', cors(), mongoValidateUser, registerUser);
+router.post('/register',  mongoValidateUser, registerUser);
 
 router.post('/login', (req, res, next) => {
     passport.authenticate('local', (err, user, info) => {
@@ -50,7 +49,7 @@ router.post('/logout', (req, res) => {
     });
 });
 
-router.post('/changeMode', cors(), (req, res) => {
+router.post('/changeMode',  (req, res) => {
     const {mode} = req.body;
     let message = "";
     if (mode === 'mongoose') {
@@ -63,17 +62,17 @@ router.post('/changeMode', cors(), (req, res) => {
     return res.status(200).json({ message: message});
 });
 
-router.get('/file',  isLogged, async (req, res) => {
+router.get('/file', isLogged, async (req, res) => {
     try {
         const files = await getMyFiles(req.user);
-        res.json({ success: true, files: files });
+        res.json({ success: true, files: files, currentUser: req.user, mode: mongooseMode?'mongoose':'mongoDB'});
     } catch(error) {
         const mode = mongooseMode?'Mongoose':'MongoDB';
         res.status(500).json({ success: false, error: 'Error al obtener los archivos con '+ mode + '. ' + error });
     };
 });
 
-router.post('/file', cors(), isLogged, (req, res, next) => {
+router.post('/file',  isLogged, (req, res, next) => {
     next(); 
 }, upload.single('file'), async (req, res) => {
     if (!req.file) {
@@ -93,7 +92,7 @@ router.post('/file', cors(), isLogged, (req, res, next) => {
       };
   });
 
-router.delete('/file', cors(), isLogged, async (req, res) => {
+router.delete('/file', isLogged, async (req, res) => {
     const { id } = req.body;
     try {
         await deleteFile(id, req.user);
@@ -104,19 +103,31 @@ router.delete('/file', cors(), isLogged, async (req, res) => {
       };
 });
 
-router.put('/file', cors(), isLogged, mongoValidatePerm, async (req, res) => {
-    const { fileId, userId, perm } = req.body;
+router.put('/file', isLogged, mongoValidatePerm, async (req, res) => {
+    const { fileId, username, perm } = req.body;
 
     try {
-        await changePerms(fileId, userId, perm, req.user)
-        res.json({ success: true, message: 'Permisos del archivo '+ fileId + ' para el usuario '+ userId + ' cambiados a '+ perm});
+        await changePerms(fileId, username, perm, req.user)
+        perm !== "none"?res.json({ success: true, message: 'Permisos del archivo '+ fileId + ' para el usuario '+ username + ' cambiados a '+ perm}):res.json({ success: true, message: 'Eliminados permisos del archivo '+ fileId + ' para el usuario '+ username});
     } catch(error) {
         const mode = mongooseMode?'Mongoose':'MongoDB';
         res.status(500).json({ success: false, error: 'Error al guardar el archivo con '+ mode + '. ' + error });
       };
   });
 
-router.post('/file/download', cors(), isLogged, async (req, res) => {
+router.put('/file/like', isLogged, async (req, res) => {
+    const { fileId } = req.body;
+    try {
+        let liked = await toggleFavorite(fileId, req.user)
+        liked?res.json({ success: true, message: 'Archivo '+ fileId + ' marcado como favorito'}):res.json({ success: true, message: 'Archivo '+ fileId + ' desmarcado como favorito'});
+    } catch(error) {
+        const mode = mongooseMode?'Mongoose':'MongoDB';
+        console.log(error);
+        res.status(500).json({ success: false, error: 'Error al actualizar el archivo con '+ mode + '. ' + error });
+      };
+});
+
+router.post('/file/download', isLogged, async (req, res) => {
     const { id } = req.body;
     try {
         const downloadStream = await downloadFile(id, req.user);
@@ -127,7 +138,6 @@ router.post('/file/download', cors(), isLogged, async (req, res) => {
         const mode = mongooseMode?'Mongoose':'MongoDB';
         res.status(500).json({ success: false, error: 'Error al obtener el archivo con '+ mode + '. ' + error });
       };
-}
-);
+});
 
 export default router;

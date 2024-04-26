@@ -5,34 +5,27 @@ export default {
   setup() {       
     
     const myFiles = ref([]);
+    const currentUser = ref(null);
+    const selectedFilePerms = ref(null);
     const router = useRouter();
-    const showSidebar = ref(true);
+    const showSidebar = ref(false);
+    const showSharedPopup = ref(false);
     const formattedDate = ref(null);
-    ///const selectedFile = ref(null);
-    const selectedFile = ref({
-            "_id": "662a8267ecbd1a33e33aff24",
-            "length": 910440,
-            "chunkSize": 261120,
-            "uploadDate": "2024-04-25T16:18:47.341Z",
-            "filename": "PAI-3-VPNSSLRoadWarrior-Especificacion.pdf",
-            "contentType": "pdf",
-            "owner": {
-                "_id": "662a789aecbd1a33e33aff23",
-                "username": "admin",
-                "email": "ismbargar@alum.us.es",
-                "password": "$2b$10$3Ujg0ZlgdhNmD3isyDKJuOdKwAAs5DBb46OdcQLDErZ9FuDl5E7Ii",
-                "favorites": []
-            },
-            "sharedWith": []
-        });
+    const mode = ref(null);
+    const selectedFile = ref(null);
+
+    const toggleSharedPopup = () => {
+      showSharedPopup.value = !showSharedPopup.value
+    }
 
     const toggleSidebar = () => {
       showSidebar.value = !showSidebar.value;
     }
 
-    const selectFile = (file) => {
+    const selectFile = async (file) => {
       showSidebar.value = true;
       selectedFile.value = file;
+      selectedFilePerms.value = await verifyPerms(file, currentUser.value);
     }
 
     const closeSidebar = (event) => {
@@ -45,15 +38,105 @@ export default {
       }
     };
 
-    onMounted(() => {
-      getMyFiles();
-      document.addEventListener('click', closeSidebar);
-    });
+    const formatDate = (date) => {
+      const options = { year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: 'numeric' };
+      return new Date(date).toLocaleDateString('es-ES', options);
+    }
 
-    onUnmounted(() => {
-      document.removeEventListener('click', closeSidebar);
-    });
+    const deleteFile = async (file) => {
+      try {
+        const confirmDelete = confirm("¿Estás seguro de que deseas eliminar este archivo?");
+        if (!confirmDelete) return;
+        const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/file', {
+          body: JSON.stringify({ id: file._id }),
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: "include",
+        });
+        if (response.ok) {
+          selectedFile.value = null;
+          toggleSidebar();
+          getMyFiles();
+        }
+      } catch (error) {
+        console.log(error);
+      }
+    }
+
+    const toggleLike = async (file) => {
+      try {
+        const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/file/like', {
+          body: JSON.stringify({ fileId: file._id }),
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: "include",
+        });
+        if (response.ok) {
+          await getMyFiles();
+        }else if (response.status === 401) {
+          router.push({ name: 'login' });
+        }
+      } catch (error) {
+        console.log(error);
+      }
+    }
+
+    const verifyPerms = async (file, user) => {
+      if (file.owner._id === user._id) {
+        return 'owner';
+      } 
+      const perm = await file.sharedWith.find(x => x.user._id === user._id)
+      if (perm) {
+        return perm.perm;
+      } else {
+        return 'none';
+      }
+    }
+
+    const changePerms = async (file, user, perm) => {
+      try {
+        const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/file', {
+          body: JSON.stringify({ userId: user._id, fileId: file._id, perm: perm }),
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: "include",
+        });
+        if (response.ok) {
+          selectedFile.value = null;
+          toggleSidebar();
+          getMyFiles();
+        }
+      } catch (error) {
+        console.log(error);
+      }
+    }
+
+    const changeMode = async () => {
+      try {
+          const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/changeMode', {
+          body: JSON.stringify({ mode: mode.value ==='mongoose'? 'MongoDB' : 'mongoose'}),
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: "include",
+        });
     
+        if (response.ok) {
+          selectedFile.value = null;
+          getMyFiles();
+        }
+      } catch (error) {
+        console.log(error);
+      }
+    }
+
     const logout = async () => {
       try {
         const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/logout', {
@@ -65,7 +148,7 @@ export default {
         });
         if (response.ok) {
           router.push({ name: 'login' });
-        }else if (response.status === 401){
+        } else if (response.status === 401){
           router.push({ name: 'login' });
         }
       } catch (error) {
@@ -83,27 +166,51 @@ export default {
           credentials: "include",
         });
         const data = await response.json();
-        myFiles.value = data.files;
+        currentUser.value = data.currentUser;
+        mode.value = data.mode;
+        if (!data.files) return;
+        const favs = await data.files.filter(file => currentUser.value.favorites.includes(file._id))
+        const nofavs = await data.files.filter(file => !currentUser.value.favorites.includes(file._id))
+        
+        myFiles.value = [];
+        myFiles.value.push(...favs);
+        myFiles.value.push(...nofavs);
+
       } catch (error) {
+        if (error.status === 401) {
+          router.push({ name: 'login' });
+        }
         console.log(error);
       }
     }
 
-    const formatDate = (date) => {
-      const options = { year: 'numeric', month: 'long', day: 'numeric' };
-      return new Date(date).toLocaleDateString('es-ES', options);
-    }
+    onMounted(() => {
+      getMyFiles();
+      document.addEventListener('click', closeSidebar);
+    });
 
-
+    onUnmounted(() => {
+      document.removeEventListener('click', closeSidebar);
+    });
+    
     return {
       myFiles,
       showSidebar,
+      showSharedPopup,
       selectedFile,
+      selectedFilePerms,
       formattedDate,
+      currentUser,
+      mode,
+      changeMode, 
       getMyFiles,
       selectFile,
       toggleSidebar,
+      toggleSharedPopup,
+      toggleLike,
       formatDate,
+      deleteFile,
+      verifyPerms,
       logout
     }
   }
@@ -111,41 +218,53 @@ export default {
 </script>
  
 <template>
-  <h1>My Files</h1>
-  <div class="container">
-  <div class="files-containter">
-    <div class="file-container" v-for="file in myFiles" :key="file.id" @click="selectFile(file)">
-       <img class="file-img" :src="'/files/'+file.contentType.toLowerCase()+'.png'" alt="file.filename" width="100" height="100"  onerror="this.onerror=null;console.log(this.src);this.src='files/default.png';"> 
-       <!--this.src='https://i.pinimg.com/736x/dd/18/b3/dd18b311f3ceaa8579f5c420ead9b4a1.jpg';" -->
-      <p class="filename">{{ file.filename }}</p>
+  <div style="display:flex; justify-content: center; align-items: center;"><h1 style="margin-right:10px ;">Tus archivos</h1> <button style="margin-left: 10px" @click="logout"><span class="material-symbols-outlined">logout</span></button></div>
+  <div style="display:flex; flex-direction: column; align-items: center;">
+    <div style="display: flex; justify-content: space-between; width:85%;">
+      <span> Modo actual: {{ mode }}<button @click="changeMode(mode)" style="margin-left: 20px;"><span class="material-symbols-outlined">sync</span></button></span>
+      <button><span class="material-symbols-outlined">add</span></button>
+      
     </div>
-  </div>
-  
-  <div class="sidebar-overlay" v-if="showSidebar" @click="closeSidebar"></div>
-    <div class="sidebar" :class="{ 'show': showSidebar }">
-      <ul>
-        <li>Archivo: {{ selectedFile.filename }}</li>
-        <li>Autor: {{ selectedFile.owner.username }} ({{ selectedFile.owner.email }})</li>
-        <li>Fecha de subida: {{ formatDate(selectedFile.uploadDate)}}</li>
+    <div class="container">
+    <div class="files-container">
+      <div class="file-container" v-for="file in myFiles" :key="file.id" @click="selectFile(file)">
+        <img class="file-img" :src="'/files/'+file.contentType.toLowerCase()+'.png'" alt="file.filename" width="100" height="100"  onerror="this.onerror=null;console.log(this.src);this.src='files/default.png';"> 
+        <div style="display:flex; align-items: center;">
+          <p class="filename">{{ file.filename }} </p>
+          <span v-if="currentUser?.favorites.includes(file._id)" class="material-symbols-outlined filledHeart">favorite</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="sidebar-overlay" v-if="showSidebar && selectedFile" @click="closeSidebar"></div>
+      <div class="sidebar" :class="{ 'show': showSidebar }">
+        <ul>
+          <li>Archivo: {{ selectedFile?.filename }}</li>
+          <li>Autor: {{ selectedFile?.owner.username }} ({{ selectedFile?.owner.email }})</li>
+          <li>Fecha de subida: {{ formatDate(selectedFile?.uploadDate)}}</li>
 
-        <li style="display: inline-flex; justify-content: space-between; width: 80%;">
-          <button><span class="material-symbols-outlined">groups</span></button>
-          <button><span class="material-symbols-outlined">download</span></button>
-          <button><span class="material-symbols-outlined">delete</span></button>
-        </li>
-      </ul>
+          <li style="display: inline-flex; justify-content: space-around; width: 90%;">
+            <button v-if="['owner'].includes(selectedFilePerms)"><span class="material-symbols-outlined">groups</span></button>
+            <button v-if="['owner','write','read'].includes(selectedFilePerms)"><span class="material-symbols-outlined">download</span></button>
+            <button @click="toggleLike(selectedFile)">
+              <span v-if="!currentUser?.favorites.includes(selectedFile?._id)" class="material-symbols-outlined">favorite</span>
+              <span v-else class="material-symbols-outlined filledHeart">favorite</span>
+            </button>
+            <button v-if="['owner','write'].includes(selectedFilePerms)" @click="deleteFile(selectedFile)"><span class="material-symbols-outlined">delete</span></button>
+          </li>
+        </ul>
+      </div>
     </div>
   </div>
-  <button @click="logout"><span class="material-symbols-outlined">logout</span></button>
 </template>
 
 <style scoped>
 
-.container{
+.container {
   display: flex;
   align-items: center;
 }
-.files-containter{
+.files-container {
   display: flex;
   justify-content: center;
   align-items: center;
@@ -153,30 +272,30 @@ export default {
   flex-wrap: wrap;
 }
 
-.file-container{
+.file-container {
   margin: 10px;
   padding: 10px;
-  border: 1px solid black;
+  border: 1px solid #C8B1E4;
   border-radius: 10px;
   width: 150px;
-  height: 150px;
+  height: auto;
 }
 
-.file-img{
+.file-img {
   margin-bottom: 10px;
   justify-self: flex-start;
 }
-
-.filename{
+.filename {
   text-align: center;
   font-size: 16px;
   font-weight: bold;
-  text-wrap: wrap;
-  word-wrap: break-word;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   width: 100%;
+  margin: 0;
 }
 
 .sidebar {
@@ -184,7 +303,7 @@ export default {
   height: 100vh;
   height: 100%;
   background-color: #2F184B;
-  transition: right 0.3s ease; /* Transición suave al cambiar la propiedad right */
+  transition: right 0.3s ease;
 }
 
 .sidebar-overlay {
@@ -213,21 +332,21 @@ export default {
 
 .container {
   position: relative;
-  overflow-x: hidden; /* Para ocultar el desplazamiento horizontal cuando se mueve el contenido */
+  overflow-x: hidden;
 }
 
 .sidebar {
   position: fixed;
   top: 0;
-  right: -300px; /* Inicialmente fuera del área visible */
+  right: -300px;
   width: 300px;
   height: 100%;
   background-color: #2F184B;
-  transition: right 0.3s ease; /* Transición suave al cambiar la propiedad right */
+  transition: right 0.3s ease;
 }
 
 .sidebar.show {
-  right: 0; /* Mostrar la barra lateral */
+  right: 0;
 }
 
 .sidebar-overlay {
@@ -242,7 +361,20 @@ export default {
 }
 
 .sidebar.show + .sidebar-overlay {
-  display: block; /* Mostrar el overlay cuando la barra lateral está abierta */
+  display: block;
+}
+
+.material-symbols-outlined {
+  font-variation-settings:
+  'FILL' 0,
+  'wght' 400,
+  'GRAD' 0,
+  'opsz' 24
+}
+
+.filledHeart {
+  font-variation-settings:
+  'FILL' 1
 }
 
 </style>

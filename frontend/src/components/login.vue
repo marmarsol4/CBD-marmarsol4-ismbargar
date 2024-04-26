@@ -27,13 +27,35 @@ export default {
       }).then(response => {
             if (response.status === 200) {
               router.push('/');
-            } else {
+            } else if (response.status === 401){
+              logout();
+              login();
+            }else{
                 error.value = 'Error al iniciar sesión';
             }
         }).catch(error => {
                 error.value = 'Error al iniciar sesión';
         })
     };
+
+    const logout = async () => {
+      try {
+        const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/logout', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: "include",
+        });
+        if (response.ok) {
+          router.push({ name: 'login' });
+        } else if (response.status === 401){
+          router.push({ name: 'login' });
+        }
+      } catch (error) {
+        console.log(error);
+      }
+    }
 
     return {
         user,

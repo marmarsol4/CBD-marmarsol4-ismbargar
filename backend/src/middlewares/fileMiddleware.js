@@ -5,9 +5,8 @@ import { db } from '../../app.js';
 import { mongooseMode } from '../../app.js';
 
 export const mongoValidatePerm = [
-    cors(),
-    body('userId').custom(async (value) => {
-        const user = await db.collection('users').findOne({ _id: ObjectId.createFromHexString(value)});
+    body('username').custom(async (value) => {
+        const user = await db.collection('users').findOne({ username: value});
         if (!user) {
             return Promise.reject('El usuario no existe');
         }
@@ -18,7 +17,7 @@ export const mongoValidatePerm = [
             return Promise.reject('El archivo no existe');
         }
     }),
-    body('perm').trim().notEmpty().withMessage('El permiso del archivo es obligatorio').isIn(['view', 'read', 'write']).withMessage('El permiso del archivo debe ser view, read o write'),
+    body('perm').trim().notEmpty().withMessage('El permiso del archivo es obligatorio').isIn(['none','view', 'read', 'write']).withMessage('El permiso del archivo debe ser view, read o write, o none para eliminar el permiso'),
     (req, res, next) => {
         if (!mongooseMode) {
             const errors = validationResult(req);
