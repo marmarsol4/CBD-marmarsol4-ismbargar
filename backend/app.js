@@ -46,7 +46,8 @@ export const db = await mongoConnectDb();
 //await db.collection('users').drop();
 
 const mongooseConnectDb = async () => {
-  await mongoose.connect(mongoUri + "/" + process.env.MONGO_DATABASE);
+  await mongoose.connect(mongoUri);
+  mongoose.connection.db = process.env.MONGO_DATABASE
   const mongooseDb = mongoose.connection;
   mongooseDb.on('error', console.error.bind(console, 'Error de conexión a MongoDB con Mongoose:'));
 }

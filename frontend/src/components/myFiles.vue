@@ -1,6 +1,7 @@
 <script>
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted, nextTick  } from 'vue';
 import { useRouter } from 'vue-router';
+
 export default {
   setup() {       
     
@@ -13,6 +14,21 @@ export default {
     const formattedDate = ref(null);
     const mode = ref(null);
     const selectedFile = ref(null);
+    const isModalOpened = ref(false);
+    const shareWith = ref(null);
+    const sharePerm = ref(null);
+    const modalElement = ref(null);
+
+    const openModal = () => {
+      isModalOpened.value = true;
+    };
+    const closeModal = () => {
+      isModalOpened.value = false;
+    };
+
+    const submitHandler = ()=>{
+      //here you do whatever
+    }
 
     const toggleSharedPopup = () => {
       showSharedPopup.value = !showSharedPopup.value
@@ -30,10 +46,10 @@ export default {
 
     const closeSidebar = (event) => {
       const sidebar = document.querySelector('.sidebar');
+      const modal = document.querySelector('.modal');
       const fileContainers = Array.from(document.querySelectorAll('.file-container'));
       const selectedFile = fileContainers.some(fileContainer => fileContainer.contains(event.target));
-      
-      if (sidebar && !sidebar.contains(event.target) && !selectedFile ) {
+      if (sidebar && !sidebar.contains(event.target) && !modal && !selectedFile ) {
         showSidebar.value = false;
       }
     };
@@ -97,10 +113,10 @@ export default {
       }
     }
 
-    const changePerms = async (file, user, perm) => {
-      try {
+    const changePerms = async (perm, username) => {
+      try { 
         const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/file', {
-          body: JSON.stringify({ userId: user._id, fileId: file._id, perm: perm }),
+          body: JSON.stringify({ username: username, fileId: selectedFile.value._id, perm: perm }),
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -108,9 +124,8 @@ export default {
           credentials: "include",
         });
         if (response.ok) {
-          selectedFile.value = null;
-          toggleSidebar();
-          getMyFiles();
+          await getMyFiles();
+          selectedFile.value = myFiles.value.find(file => file._id === selectedFile.value._id);
         }
       } catch (error) {
         console.log(error);
@@ -184,6 +199,22 @@ export default {
       }
     }
 
+    const translatePerm = (perm) => {
+      switch (perm) {
+        case 'owner':
+          return 'Propietario';
+        case 'write':
+          return 'Escritura';
+        case 'read':
+          return 'Lectura';
+        case 'view':
+          return 'Vista';
+        default:
+          return 'Ninguno';
+      }
+    }
+    
+
     onMounted(() => {
       getMyFiles();
       document.addEventListener('click', closeSidebar);
@@ -202,7 +233,14 @@ export default {
       formattedDate,
       currentUser,
       mode,
-      changeMode, 
+      isModalOpened,
+      shareWith,
+      sharePerm,
+      openModal,
+      closeModal,
+      submitHandler,
+      changeMode,
+      changePerms,
       getMyFiles,
       selectFile,
       toggleSidebar,
@@ -211,7 +249,8 @@ export default {
       formatDate,
       deleteFile,
       verifyPerms,
-      logout
+      logout,
+      translatePerm,
     }
   }
 }   
@@ -244,7 +283,7 @@ export default {
           <li>Fecha de subida: {{ formatDate(selectedFile?.uploadDate)}}</li>
 
           <li style="display: inline-flex; justify-content: space-around; width: 90%;">
-            <button v-if="['owner'].includes(selectedFilePerms)"><span class="material-symbols-outlined">groups</span></button>
+            <button v-if="['owner'].includes(selectedFilePerms)" @click="openModal"><span class="material-symbols-outlined">groups</span></button>
             <button v-if="['owner','write','read'].includes(selectedFilePerms)"><span class="material-symbols-outlined">download</span></button>
             <button @click="toggleLike(selectedFile)">
               <span v-if="!currentUser?.favorites.includes(selectedFile?._id)" class="material-symbols-outlined">favorite</span>
@@ -255,6 +294,36 @@ export default {
         </ul>
       </div>
     </div>
+
+    <Modal class="modal" ref="modalElement" :isOpen="isModalOpened" @modal-close="closeModal" @submit="submitHandler" name="first-modal">
+      <template #header><strong>Compartir</strong></template>
+      <template #content>
+        <p>Compartido con:</p>
+        <div style="display:flex; flex-direction: column; justify-content: center; align-items: center; border: 10px white;width: 90%">
+          <div v-for="shared in selectedFile?.sharedWith" :key="shared.user._id" style="width: 90%; justify-content: center; align-items: center;">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <div style="flex-grow: 1; display:flex; justify-content: end;">{{ shared.user.username }}</div>
+              <div style="margin: 0 5px;">-</div>
+              <div>{{shared.perm === "view"?'&nbsp;&nbsp;&nbsp;':""}} {{ translatePerm(shared.perm) }}</div>
+              <span class="material-symbols-outlined" @click="changePerms('none',shared.user.username)" style="color:red; margin-left:5px; cursor:pointer;">close</span>
+            </div>
+          </div>
+
+        </div>
+      </template>
+      <template #footer>
+        <div style="margin-top:20px">
+          <input type="text" v-model="shareWith" placeholder="Compartir con..." style="margin-right:5px"/>
+          <select v-model="sharePerm">
+            <option value="view">Vista</option>
+            <option value="read">Lectura</option>
+            <option value="write">Escritura</option>
+          </select>
+          <button @click="changePerms(sharePerm, shareWith)" style="margin-top:10px">Compartir</button>
+        </div>
+      </template>
+    </Modal>
+
   </div>
 </template>
 
