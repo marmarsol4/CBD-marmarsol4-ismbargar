@@ -2,8 +2,6 @@ import cors from 'cors';
 
 const allowedOrigins = [
     'http://localhost:5173',
-    'chrome-extension://eipdnjedkpcnlmmdfdkgfpljanehloah',
-    'https://vrk28fp0-5173.uks1.devtunnels.ms',
   ];
   
 const corsOptions = {

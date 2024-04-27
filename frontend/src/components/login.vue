@@ -1,5 +1,5 @@
 <script>
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 
 export default {
@@ -13,6 +13,11 @@ export default {
 
     const router = useRouter();
     const error = ref('');
+    const mode = ref('');
+
+    onMounted(() => {
+      getMode();
+    });
 
     const login = () => {
       error.value = '';
@@ -37,6 +42,22 @@ export default {
                 error.value = 'Error al iniciar sesión';
         })
     };
+    
+    const getMode = async () =>{
+      fetch(import.meta.env.VITE_BACKEND_URL + '/mode', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: "include",
+      }).then(response => {
+        if (response.ok) {
+          response.json().then(data => {
+            mode.value = data.mode;
+          });
+        }
+      }).catch(error => {
+        console.log(error);
+      })
+    }
 
     const logout = async () => {
       try {
@@ -57,19 +78,44 @@ export default {
       }
     }
 
+    const changeMode = async () => {
+      try {
+          const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/changeMode', {
+          body: JSON.stringify({ mode: mode.value ==='mongoose'? 'MongoDB' : 'mongoose'}),
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: "include",
+        });
+    
+        if (response.ok) {
+          await getMode();
+        }
+      } catch (error) {
+        console.log(error);
+      }
+    }
+
     return {
         user,
         error,
+        mode,
         login,
+        logout,
+        changeMode
     }
   }
 }   
 </script>
  
 <template>
+  <div style="margin-bottom: 2%;">
+    <span> Modo actual: {{ mode }}<button @click="changeMode(mode)" style="margin-left: 20px;"><span class="material-symbols-outlined">sync</span></button></span>
+  </div>
+
   <div class="container">
-    <div class="login-container">
-      
+    <div class="login-container">      
     <h2><span class="gradient-text">Inicio de sesión</span></h2>
     <form @submit.prevent="login">
       <div class="form">
@@ -92,9 +138,7 @@ export default {
       </form>
     </div>
   </div>
-  <div>
-    ¿No tienes cuenta? <button type="button" @click="$router.push('/register')" style="margin:2%;">Regístrate</button>
-  </div>
+      ¿No tienes cuenta? <button type="button" @click="$router.push('/register')" style="margin:2%;">Regístrate</button>
 </template>
 
 <style scoped>

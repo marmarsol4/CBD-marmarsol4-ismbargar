@@ -110,7 +110,7 @@ export function deleteFile(fileId, user) {
     });
 }
 
-export function changePerms(fileId, username, perm, user) {
+export function changePerms(fileId, username, perm, reqUser) {
     return new Promise(async (resolve, reject) => {
         try {
             let file = undefined;
@@ -121,15 +121,15 @@ export function changePerms(fileId, username, perm, user) {
                     reject(new Error('No se encontró el archivo guardado en MongoDB'));
                     return;
                 }
-                if (file.owner.equals(user._id)) {
-                    const userId = await User.findOne({username: username}).then(x=>x._id);
-                    if (!userId) {
-                        reject(new Error('El usuario con el que se quiere compartir el archivo no existe'));
+                if (file.owner.equals(reqUser._id)) {
+                    const user = await User.findOne({username: username});
+                    if (!user) {
+                        reject(new Error('El usuario no existe'));
                         return;
                     }
-                    const shared = file.sharedWith.filter(x => !x.user.equals(userId));
+                    const shared = file.sharedWith.filter(x => !x.user.equals(user._id));
                     if (perm != 'none'){
-                        shared.push({ user: userId, perm: perm });
+                        shared.push({ user: user._id, perm: perm });
                     }
                     file.sharedWith=shared;
                     await file.save();
@@ -143,10 +143,10 @@ export function changePerms(fileId, username, perm, user) {
                     reject(new Error('No se encontró el archivo guardado en MongoDB'));
                     return;
                 }
-                if (file.owner.equals(user._id)) {
+                if (file.owner.equals(reqUser._id)) {
                     const userId = await db.collection('users').findOne({username: username}).then(x=>x._id);
                     if (!userId) {
-                        reject(new Error('El usuario con el que se quiere compartir el archivo no existe'));
+                        reject(new Error('El usuario no existe'));
                         return;
                     }
                     const shared = file.sharedWith.filter(x => !x.user.equals(userId));

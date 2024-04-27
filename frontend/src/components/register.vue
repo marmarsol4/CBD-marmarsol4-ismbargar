@@ -1,5 +1,5 @@
 <script>
-import { ref, watch } from "vue";
+import { ref, watch, onMounted } from "vue";
 import { useRouter } from "vue-router";
 
 export default {
@@ -15,6 +15,27 @@ export default {
     const passwordMatch = ref("");
     const errorMessage = ref([]);
     const successMessage = ref("");
+    const mode = ref('');
+
+    onMounted(() => {
+      getMode();
+    });
+
+    const getMode = async () =>{
+      fetch(import.meta.env.VITE_BACKEND_URL + '/mode', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: "include",
+      }).then(response => {
+        if (response.ok) {
+          response.json().then(data => {
+            mode.value = data.mode;
+          });
+        }
+      }).catch(error => {
+        console.log(error);
+      })
+    }
 
     const register = () => {
       if (errorMessage.value.includes("Las contraseñas no coinciden")) {
@@ -63,18 +84,43 @@ export default {
       }
     });
 
+    const changeMode = async () => {
+      try {
+          const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/changeMode', {
+          body: JSON.stringify({ mode: mode.value ==='mongoose'? 'MongoDB' : 'mongoose'}),
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: "include",
+        });
+    
+        if (response.ok) {
+          await getMode();
+        }
+      } catch (error) {
+        console.log(error);
+      }
+    }
+
     return {
       user,
       passwordMatch,
       errorMessage,
       successMessage,
+      mode,
       register,
+      changeMode
     };
   },
 };
 </script>
 
 <template>
+  <div style="margin-bottom: 2%;">
+    <span> Modo actual: {{ mode }}<button @click="changeMode(mode)" style="margin-left: 20px;"><span class="material-symbols-outlined">sync</span></button></span>
+  </div>
+
   <div class="container">
     <div class="register-container">
       <h2><span class="gradient-text">Registro</span></h2>

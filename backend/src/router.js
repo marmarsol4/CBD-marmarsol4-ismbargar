@@ -49,6 +49,10 @@ router.post('/logout', (req, res) => {
     });
 });
 
+router.get('/mode', (req, res) => {
+    res.status(200).json({ mode: mongooseMode?'mongoose':'mongoDB'});
+});
+
 router.post('/changeMode',  (req, res) => {
     const {mode} = req.body;
     let message = "";
@@ -105,14 +109,29 @@ router.delete('/file', isLogged, async (req, res) => {
 
 router.put('/file', isLogged, mongoValidatePerm, async (req, res) => {
     const { fileId, username, perm } = req.body;
+    let message = "";
+
+    message = fileId === undefined || fileId === "" ?'El id del archivo es obligatorio':message;
+    message = (username === undefined || username.trim() === "") && message === "" ?'El nombre de usuario es obligatorio':message;
+    message = (perm === undefined || perm === "") && message === "" ?'El permiso es obligatorio':message;
+
+    if (message !== "" ) {
+        res.status(400).json({ success: false, error: message})
+        return ;
+    }
 
     try {
         await changePerms(fileId, username, perm, req.user)
         perm !== "none"?res.json({ success: true, message: 'Permisos del archivo '+ fileId + ' para el usuario '+ username + ' cambiados a '+ perm}):res.json({ success: true, message: 'Eliminados permisos del archivo '+ fileId + ' para el usuario '+ username});
     } catch(error) {
         const mode = mongooseMode?'Mongoose':'MongoDB';
-        res.status(500).json({ success: false, error: 'Error al guardar el archivo con '+ mode + '. ' + error });
-      };
+        if (error.message === "El usuario no existe"){
+            res.status(404).json({ success: false, error: error.message ,message: 'Error al guardar el archivo con '+ mode + '. ' + error });
+        }else{
+            res.status(500).json({ success: false, error: 'Error al guardar el archivo con '+ mode + '. ' + error });
+        }
+    };
+
   });
 
 router.put('/file/like', isLogged, async (req, res) => {
@@ -122,7 +141,6 @@ router.put('/file/like', isLogged, async (req, res) => {
         liked?res.json({ success: true, message: 'Archivo '+ fileId + ' marcado como favorito'}):res.json({ success: true, message: 'Archivo '+ fileId + ' desmarcado como favorito'});
     } catch(error) {
         const mode = mongooseMode?'Mongoose':'MongoDB';
-        console.log(error);
         res.status(500).json({ success: false, error: 'Error al actualizar el archivo con '+ mode + '. ' + error });
       };
 });
@@ -136,6 +154,7 @@ router.post('/file/download', isLogged, async (req, res) => {
         downloadStream.pipe(res);
     } catch(error) {
         const mode = mongooseMode?'Mongoose':'MongoDB';
+        console.log(error);
         res.status(500).json({ success: false, error: 'Error al obtener el archivo con '+ mode + '. ' + error });
       };
 });

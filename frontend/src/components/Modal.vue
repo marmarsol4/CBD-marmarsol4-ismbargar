@@ -1,6 +1,6 @@
 <script setup>
 import { ref } from "vue";
-import {onClickOutside} from '@vueuse/core'
+import { onClickOutside } from '@vueuse/core'
 
 const props = defineProps({
   isOpen: Boolean,
@@ -45,6 +45,7 @@ onClickOutside(target, ()=>emit('modal-close'))
   height: 100%;
   background-color: rgba(0, 0, 0, 0.5);
 }
+
 .modal-container {
   width: 300px;
   margin: 150px auto;

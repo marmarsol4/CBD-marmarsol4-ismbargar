@@ -18,7 +18,7 @@ export default {
     const shareWith = ref(null);
     const sharePerm = ref(null);
     const errorMessage = ref([]);
-    const modalElement = ref(null);
+    const fileInput = ref(null); 
 
     const openModal = () => {
       isModalOpened.value = true;
@@ -35,9 +35,6 @@ export default {
       shareWith.value = '';
       sharePerm.value = 'view';
     };
-
-    const submitHandler = ()=>{
-    }
 
     const toggleSharedPopup = () => {
       showSharedPopup.value = !showSharedPopup.value
@@ -142,13 +139,17 @@ export default {
           errorMessage.value = [];
         } else if (response.status === 401) {
           router.push({ name: 'login' });
-        } else if (response.status === 400) {
+        } else if (response.status === 400 || response.status === 404) {
           errorMessage.value = [];
-            response.json().then((data) => {
+          response.json().then((data) => {
+            if (data.error) {
+              errorMessage.value.push(data.error);
+            } else {
               data.errors.forEach((error) => {
                 errorMessage.value.push(error.msg);
-            });
-            throw new Error("Error al cambiar permisos");
+              });
+            }
+          throw new Error("Error al cambiar permisos");
           })
         }
 
@@ -241,6 +242,56 @@ export default {
           return 'Ninguno';
       }
     }
+
+    const downloadFile = async () => {
+      try {
+        const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/file/download', {
+          body: JSON.stringify({ id: selectedFile.value._id }),
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: "include",
+        });
+        if (response.ok) {
+          const blob = await response.blob();
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = selectedFile.value.filename;
+          a.click();
+          window.URL.revokeObjectURL(url);
+        } else if (response.status === 401) {
+          router.push({ name: 'login' });
+        }
+      } catch (error) {
+        console.log(error);
+      }
+    }
+
+    const selectUploadFile = () => {
+      fileInput.value.click();
+    };
+
+    const uploadFile = async (event) => {
+      const file = event.target.files[0];
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/file', {
+          method: 'POST',
+          body: formData,
+          credentials: "include",
+        });
+        if (response.ok) {
+          getMyFiles();
+        } else if (response.status === 401) {
+          router.push({ name: 'login' });
+        }
+      } catch (error) {
+        console.log(error);
+      }
+    }
     
     onMounted(() => {
       getMyFiles();
@@ -264,6 +315,7 @@ export default {
       shareWith,
       sharePerm,
       errorMessage,
+      fileInput,
       openModal,
       closeModal,
       clearModalFields,
@@ -279,6 +331,9 @@ export default {
       deleteFile,
       verifyPerms,
       logout,
+      downloadFile,
+      selectUploadFile,
+      uploadFile,
       translatePerm,
     }
   }
@@ -290,18 +345,22 @@ export default {
   <div style="display:flex; flex-direction: column; align-items: center;">
     <div style="display: flex; justify-content: space-between; width:85%;">
       <span> Modo actual: {{ mode }}<button @click="changeMode(mode)" style="margin-left: 20px;"><span class="material-symbols-outlined">sync</span></button></span>
-      <button><span class="material-symbols-outlined">add</span></button>
-      
+      <input type="file" ref="fileInput" style="display: none" @change="uploadFile">
+      <button @click="selectUploadFile"><span class="material-symbols-outlined">add</span></button>
     </div>
     <div class="container">
     <div class="files-container">
-      <div class="file-container" v-for="file in myFiles" :key="file.id" @click="selectFile(file)">
-        <img class="file-img" :src="'/files/'+file.contentType.toLowerCase()+'.png'" alt="file.filename" width="100" height="100"  onerror="this.onerror=null;console.log(this.src);this.src='files/default.png';"> 
-        <div style="display:flex; align-items: center;">
-          <p class="filename">{{ file.filename }} </p>
-          <span v-if="currentUser?.favorites.includes(file._id)" class="material-symbols-outlined filledHeart">favorite</span>
-        </div>
+      <div v-if="myFiles.length === 0">
+        <p style="font-size: xx-large; font-weight: bolder;">No hay archivos...</p>
       </div>
+      <div v-else>
+        <div class="file-container" v-for="file in myFiles" :key="file.id" @click="selectFile(file)">
+          <img class="file-img" :src="'/files/'+file.contentType.toLowerCase()+'.png'" alt="file.filename" width="100" height="100"  onerror="this.onerror=null;this.src='files/default.png';"> 
+          <div style="display:flex; align-items: center;">
+            <p class="filename">{{ file.filename }} </p>
+            <span v-if="currentUser?.favorites.includes(file._id)" class="material-symbols-outlined filledHeart">favorite</span>
+          </div>
+        </div>
     </div>
     
     <div class="sidebar-overlay" v-if="showSidebar && selectedFile" @click="closeSidebar"></div>
@@ -313,7 +372,7 @@ export default {
 
           <li style="display: inline-flex; justify-content: space-around; width: 90%;">
             <button v-if="['owner'].includes(selectedFilePerms)" @click="openModal"><span class="material-symbols-outlined">groups</span></button>
-            <button v-if="['owner','write','read'].includes(selectedFilePerms)"><span class="material-symbols-outlined">download</span></button>
+            <button v-if="['owner','write','read'].includes(selectedFilePerms)" @click="downloadFile"><span class="material-symbols-outlined">download</span></button>
             <button @click="toggleLike(selectedFile)">
               <span v-if="!currentUser?.favorites.includes(selectedFile?._id)" class="material-symbols-outlined">favorite</span>
               <span v-else class="material-symbols-outlined filledHeart">favorite</span>
@@ -324,7 +383,7 @@ export default {
       </div>
     </div>
 
-    <Modal class="modal" ref="modalElement" :isOpen="isModalOpened" @modal-close="closeModal" @submit="submitHandler" name="first-modal">
+    <Modal class="modal" :isOpen="isModalOpened" @modal-close="closeModal" @submit="submitHandler" name="first-modal">
       <template #header><strong>Compartir archivo</strong></template>
       <template #content>
         
@@ -339,13 +398,13 @@ export default {
               <tr v-for="shared in selectedFile?.sharedWith" :key="shared.user._id" style="display: table-row;">
                 <td style="padding: 0px; text-align: center;">{{ shared.user.username }}</td>
                 <td style="padding: 0px; margin-left: 5px; margin-right: 5px;">-</td>
-                <td style="padding: 0px; text-align: center;">{{ shared.perm === 'view' ? '&nbsp;&nbsp;&nbsp;' : '' }} {{ translatePerm(shared.perm) }}</td>
+                <td style="padding: 0px; text-align: center;">{{ translatePerm(shared.perm) }}</td>
                 <td style="padding: 0px; color: red; cursor: pointer; padding-top: 6px;" class="material-symbols-outlined" @click="changePerms('none', shared.user.username)">close</td>
               </tr>
             </tbody>
           </table>
         </div>
-
+        
       </template>
       <template #footer>
         <div style="margin-top:20px">
@@ -364,7 +423,7 @@ export default {
         </div>
       </template>
     </Modal>
-
+  </div>
   </div>
 </template>
 
@@ -389,7 +448,7 @@ export default {
   border: 1px solid #C8B1E4;
   border-radius: 10px;
   width: 150px;
-  height: auto;
+  height: 175px;
 }
 
 .file-img {

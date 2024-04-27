@@ -58,5 +58,5 @@ export const mongooseModeChange = (mode) => {mongooseMode = mode;}
 export { mongoose };
 
 app.listen(serverPort, () => {
-  console.log(`Servidor iniciado en el puerto ${serverPort}`);
+  console.log(`Servidor iniciado en el puerto ${serverPort}. \nAccede aquí: http://localhost:${serverPort}`);
 }); 
