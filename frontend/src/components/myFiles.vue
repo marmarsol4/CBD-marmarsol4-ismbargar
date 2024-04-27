@@ -17,17 +17,26 @@ export default {
     const isModalOpened = ref(false);
     const shareWith = ref(null);
     const sharePerm = ref(null);
+    const errorMessage = ref([]);
     const modalElement = ref(null);
 
     const openModal = () => {
       isModalOpened.value = true;
+      sharePerm.value = 'view';
     };
+
     const closeModal = () => {
       isModalOpened.value = false;
+      errorMessage.value = [];
+      clearModalFields();
+    };
+
+    const clearModalFields = () => {
+      shareWith.value = '';
+      sharePerm.value = 'view';
     };
 
     const submitHandler = ()=>{
-      //here you do whatever
     }
 
     const toggleSharedPopup = () => {
@@ -71,10 +80,13 @@ export default {
           },
           credentials: "include",
         });
+
         if (response.ok) {
           selectedFile.value = null;
           toggleSidebar();
           getMyFiles();
+        } else if (response.status === 401) {
+          router.push({ name: 'login' });
         }
       } catch (error) {
         console.log(error);
@@ -93,7 +105,7 @@ export default {
         });
         if (response.ok) {
           await getMyFiles();
-        }else if (response.status === 401) {
+        } else if (response.status === 401) {
           router.push({ name: 'login' });
         }
       } catch (error) {
@@ -123,10 +135,23 @@ export default {
           },
           credentials: "include",
         });
+
         if (response.ok) {
           await getMyFiles();
           selectedFile.value = myFiles.value.find(file => file._id === selectedFile.value._id);
+          errorMessage.value = [];
+        } else if (response.status === 401) {
+          router.push({ name: 'login' });
+        } else if (response.status === 400) {
+          errorMessage.value = [];
+            response.json().then((data) => {
+              data.errors.forEach((error) => {
+                errorMessage.value.push(error.msg);
+            });
+            throw new Error("Error al cambiar permisos");
+          })
         }
+
       } catch (error) {
         console.log(error);
       }
@@ -180,21 +205,24 @@ export default {
           },
           credentials: "include",
         });
-        const data = await response.json();
-        currentUser.value = data.currentUser;
-        mode.value = data.mode;
-        if (!data.files) return;
-        const favs = await data.files.filter(file => currentUser.value.favorites.includes(file._id))
-        const nofavs = await data.files.filter(file => !currentUser.value.favorites.includes(file._id))
-        
-        myFiles.value = [];
-        myFiles.value.push(...favs);
-        myFiles.value.push(...nofavs);
 
-      } catch (error) {
-        if (error.status === 401) {
+        if (response.ok) {
+          const data = await response.json();
+          currentUser.value = data.currentUser;
+          mode.value = data.mode;
+          if (!data.files) return;
+          const favs = await data.files.filter(file => currentUser.value.favorites.includes(file._id))
+          const nofavs = await data.files.filter(file => !currentUser.value.favorites.includes(file._id))
+          
+          myFiles.value = [];
+          myFiles.value.push(...favs);
+          myFiles.value.push(...nofavs);
+
+        } else if (response.status === 401) {
           router.push({ name: 'login' });
-        }
+        } 
+ 
+      } catch (error) {
         console.log(error);
       }
     }
@@ -214,7 +242,6 @@ export default {
       }
     }
     
-
     onMounted(() => {
       getMyFiles();
       document.addEventListener('click', closeSidebar);
@@ -236,8 +263,10 @@ export default {
       isModalOpened,
       shareWith,
       sharePerm,
+      errorMessage,
       openModal,
       closeModal,
+      clearModalFields,
       submitHandler,
       changeMode,
       changePerms,
@@ -296,30 +325,42 @@ export default {
     </div>
 
     <Modal class="modal" ref="modalElement" :isOpen="isModalOpened" @modal-close="closeModal" @submit="submitHandler" name="first-modal">
-      <template #header><strong>Compartir</strong></template>
+      <template #header><strong>Compartir archivo</strong></template>
       <template #content>
-        <p>Compartido con:</p>
-        <div style="display:flex; flex-direction: column; justify-content: center; align-items: center; border: 10px white;width: 90%">
-          <div v-for="shared in selectedFile?.sharedWith" :key="shared.user._id" style="width: 90%; justify-content: center; align-items: center;">
-            <div style="display: flex; align-items: center; justify-content: space-between;">
-              <div style="flex-grow: 1; display:flex; justify-content: end;">{{ shared.user.username }}</div>
-              <div style="margin: 0 5px;">-</div>
-              <div>{{shared.perm === "view"?'&nbsp;&nbsp;&nbsp;':""}} {{ translatePerm(shared.perm) }}</div>
-              <span class="material-symbols-outlined" @click="changePerms('none',shared.user.username)" style="color:red; margin-left:5px; cursor:pointer;">close</span>
-            </div>
-          </div>
-
+        
+        <div v-if="selectedFile?.sharedWith.length === 0">
+          <p>Este archivo no se ha compartido</p>
         </div>
+
+        <div v-else>
+          <p>Compartido con:</p>
+          <table style="border-collapse: collapse; width: 100%; height: 100%;">
+            <tbody style="display: table; justify-items: center; width: 100%; height: 100%;">
+              <tr v-for="shared in selectedFile?.sharedWith" :key="shared.user._id" style="display: table-row;">
+                <td style="padding: 0px; text-align: center;">{{ shared.user.username }}</td>
+                <td style="padding: 0px; margin-left: 5px; margin-right: 5px;">-</td>
+                <td style="padding: 0px; text-align: center;">{{ shared.perm === 'view' ? '&nbsp;&nbsp;&nbsp;' : '' }} {{ translatePerm(shared.perm) }}</td>
+                <td style="padding: 0px; color: red; cursor: pointer; padding-top: 6px;" class="material-symbols-outlined" @click="changePerms('none', shared.user.username)">close</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
       </template>
       <template #footer>
         <div style="margin-top:20px">
-          <input type="text" v-model="shareWith" placeholder="Compartir con..." style="margin-right:5px"/>
-          <select v-model="sharePerm">
+
+          <div class="error" v-if="errorMessage.length !== 0">
+            <p style="margin-top: 5px; margin-bottom: 5px;" v-for="error in errorMessage">{{ error }}</p>
+          </div>
+
+          <input type="text" v-model="shareWith" placeholder="Comparta con username" style="margin-right:5px; background-color: #f2f2f2; color: black"/>
+          <select v-model="sharePerm" style="background-color: #f2f2f2; color: black;">
             <option value="view">Vista</option>
             <option value="read">Lectura</option>
             <option value="write">Escritura</option>
           </select>
-          <button @click="changePerms(sharePerm, shareWith)" style="margin-top:10px">Compartir</button>
+          <button @click="changePerms(sharePerm, shareWith).then(clearModalFields())" style="margin-top:10px">Compartir</button>
         </div>
       </template>
     </Modal>
@@ -333,6 +374,7 @@ export default {
   display: flex;
   align-items: center;
 }
+
 .files-container {
   display: flex;
   justify-content: center;
@@ -444,6 +486,21 @@ export default {
 .filledHeart {
   font-variation-settings:
   'FILL' 1
+}
+
+.error {
+  grid-column: 1 / -1;
+  text-align: center;
+  justify-content: center;
+  width: 90%;
+  height: auto;
+  background-color: rgb(151, 47, 47);
+  border-radius: 10px;
+  padding: 1px 10px;
+  margin-bottom: 10px;
+  margin-left: auto;
+  margin-right: auto;
+  overflow-wrap: break-word;
 }
 
 </style>
