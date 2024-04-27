@@ -5,10 +5,12 @@ import { db } from '../../app.js';
 import { mongooseMode } from '../../app.js';
 
 export const mongoValidatePerm = [
-    body('username').custom(async (value) => {
-        const user = await db.collection('users').findOne({ username: value});
-        if (!user) {
-            return Promise.reject('El usuario no existe');
+    body('username').trim().notEmpty().withMessage('El nombre de usuario es obligatorio').custom(async (value) => {
+        if (value.trim() !== '') { 
+            const user = await db.collection('users').findOne({ username: value});
+            if (!user) {
+                return Promise.reject('El usuario no existe');
+            }
         }
     }),
     body('fileId').custom(async (value) => {
