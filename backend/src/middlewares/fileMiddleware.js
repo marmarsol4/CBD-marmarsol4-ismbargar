@@ -1,4 +1,3 @@
-import cors from 'cors';
 import { ObjectId } from 'mongodb';
 import { body, validationResult } from 'express-validator';
 import { db } from '../../app.js';

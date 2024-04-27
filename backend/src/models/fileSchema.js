@@ -21,7 +21,7 @@ const fileSchema = new mongoose.Schema({
           validator: (value) => {
             return ['view', 'read', 'write'].includes(value);
           }, message: props => `El permiso del archivo debe ser view, read o write`
-        } }, // view es que esté visible pero sin acceder
+        } },
       }
     ],
 });

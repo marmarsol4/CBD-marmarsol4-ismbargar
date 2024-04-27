@@ -1,4 +1,3 @@
-import cors from 'cors';
 import { body, validationResult } from 'express-validator';
 import { db } from '../../app.js';
 import { mongooseMode } from '../../app.js';
@@ -27,7 +26,7 @@ export const mongoValidateUser = [
     }),
     body('password').trim().notEmpty().withMessage('La contraseña no puede estar vacía ni estar formada por espacios').isLength({ min: 12 }).withMessage('La contraseña debe tener al menos 12 caracteres').custom(async (value) => {
         if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\$%\^&\*])/.test(value)) {
-            return Promise.reject(`La contraseña debe tener al menos una letra minúscula, una letra mayúscula, un número y un caracter especial`);
+            return Promise.reject(`La contraseña debe tener al menos una letra minúscula, una letra mayúscula, un número y un carácter especial`);
         }
         if (/\s/.test(value)) {
             return Promise.reject(`La contraseña no puede contener espacios en blanco`);

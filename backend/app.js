@@ -43,7 +43,6 @@ const mongoConnectDb = async () => {
   return client.db(process.env.MONGO_DATABASE); 
 }
 export const db = await mongoConnectDb();
-//await db.collection('users').drop();
 
 const mongooseConnectDb = async () => {
   await mongoose.connect(mongoUri + "/" + process.env.MONGO_DATABASE);
