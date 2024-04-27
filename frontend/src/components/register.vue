@@ -60,11 +60,17 @@ export default {
           } else {
             errorMessage.value = [];
             response.json().then((data) => {
-              data.errors.forEach((error) => {
-                errorMessage.value.push(error.msg);
+              console.log(data);
+              if (data.message) {
+                errorMessage.value.push(...data.message);
+                
+              } else {
+                data.errors.forEach((error) => {
+                  errorMessage.value.push(error.msg);
+                });
+              }
             });
             throw new Error("Error al registrar");
-            })
           }
         })
         .catch((error) => {

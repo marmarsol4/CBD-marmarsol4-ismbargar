@@ -319,7 +319,6 @@ export default {
       openModal,
       closeModal,
       clearModalFields,
-      submitHandler,
       changeMode,
       changePerms,
       getMyFiles,
@@ -349,11 +348,10 @@ export default {
       <button @click="selectUploadFile"><span class="material-symbols-outlined">add</span></button>
     </div>
     <div class="container">
-    <div class="files-container">
       <div v-if="myFiles.length === 0">
         <p style="font-size: xx-large; font-weight: bolder;">No hay archivos...</p>
       </div>
-      <div v-else>
+      <div class="files-container" v-else>
         <div class="file-container" v-for="file in myFiles" :key="file.id" @click="selectFile(file)">
           <img class="file-img" :src="'/files/'+file.contentType.toLowerCase()+'.png'" alt="file.filename" width="100" height="100"  onerror="this.onerror=null;this.src='files/default.png';"> 
           <div style="display:flex; align-items: center;">
@@ -383,7 +381,7 @@ export default {
       </div>
     </div>
 
-    <Modal class="modal" :isOpen="isModalOpened" @modal-close="closeModal" @submit="submitHandler" name="first-modal">
+    <Modal class="modal" :isOpen="isModalOpened" @modal-close="closeModal" name="first-modal">
       <template #header><strong>Compartir archivo</strong></template>
       <template #content>
         
@@ -423,7 +421,6 @@ export default {
         </div>
       </template>
     </Modal>
-  </div>
   </div>
 </template>
 

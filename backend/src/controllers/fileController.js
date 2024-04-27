@@ -83,7 +83,7 @@ export function deleteFile(fileId, user) {
                     reject(new Error('No se encontró el archivo guardado en MongoDB'));
                     return;
                 }
-                const perm = file.sharedWith.some(x =>x.user == user._id && x.perm=='write');
+                const perm = file.sharedWith.some(x =>x.user.equals(user._id) && x.perm=='write');
                 if (perm || file.owner.equals(user._id)) {
                     await File.deleteOne({ _id: file._id });
                 } else {
@@ -96,7 +96,8 @@ export function deleteFile(fileId, user) {
                     reject(new Error('No se encontró el archivo guardado en MongoDB'));
                     return;
                 }
-                const perm = file.sharedWith.some(x =>x.user == user._id && x.perm=='write');
+
+                const perm = file.sharedWith.some(x =>x.user.equals(user._id) && x.perm=='write');
                 if (perm || file.owner.equals(user._id)) {
                     await db.collection("fs.files").deleteOne({ _id: ObjectId.createFromHexString(fileId) });
                 } else {

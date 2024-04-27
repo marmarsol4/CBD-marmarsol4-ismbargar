@@ -154,7 +154,6 @@ router.post('/file/download', isLogged, async (req, res) => {
         downloadStream.pipe(res);
     } catch(error) {
         const mode = mongooseMode?'Mongoose':'MongoDB';
-        console.log(error);
         res.status(500).json({ success: false, error: 'Error al obtener el archivo con '+ mode + '. ' + error });
       };
 });
