@@ -25,8 +25,8 @@ Para acceder, introducir unas credenciales registradas en la DB, dado que el usu
 
 En ella registrar unos datos válidos acorde a la política definida por el equipo:
 - Nombre de usuario: Entre 4-16 caracteres, con únicamente letras, números y guiones bajos.
-- Contraseña: de mínimo 12 caracteres, conteniendo una minúscula, una mayúscula, un número y un carácter especial. Una contraseña de ejemplo válida es: 12345678910aA@. Hay una confirmación de contraseña, donde ambos campos deben coincidir. 
-- Email: un email válido. 
+- Contraseña: De mínimo 12 caracteres, conteniendo una minúscula, una mayúscula, un número y un carácter especial. Una contraseña de ejemplo válida es: 12345678910aA@. Hay una confirmación de contraseña, donde ambos campos deben coincidir. 
+- Email: Un email válido. 
 
 Si el registro es exitoso se mostrará un mensaje de éxito y se redirigirá a login, donde ya se puede iniciar sesión con el usuario creado.  
 
