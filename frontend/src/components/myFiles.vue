@@ -292,6 +292,21 @@ export default {
         console.log(error);
       }
     }
+
+    const getImageForFile = (file) => {
+      switch (file.contentType) {
+        case 'docx':
+        return '/files/docx.png';
+        case 'pdf':
+        return '/files/pdf.png';
+        case "ppt" || "pptx":
+        return '/files/pptx.png';
+        case "xls" || "xlsx":
+        return '/files/xls.png';
+        default:
+        return '/files/default.png';
+      } 
+    }
     
     onMounted(() => {
       getMyFiles();
@@ -334,6 +349,7 @@ export default {
       selectUploadFile,
       uploadFile,
       translatePerm,
+      getImageForFile
     }
   }
 }   
@@ -353,7 +369,7 @@ export default {
       </div>
       <div class="files-container" v-else>
         <div class="file-container" v-for="file in myFiles" :key="file.id" @click="selectFile(file)">
-          <img class="file-img" :src="'/files/'+file.contentType.toLowerCase()+'.png'" alt="file.filename" width="100" height="100"  onerror="this.onerror=null;this.src='files/default.png';"> 
+          <img class="file-img" :src="getImageForFile(file)" alt="Imagen de archivo" width="100" height="100"> 
           <div style="display:flex; align-items: center;">
             <p class="filename">{{ file.filename }} </p>
             <span v-if="currentUser?.favorites.includes(file._id)" class="material-symbols-outlined filledHeart">favorite</span>
