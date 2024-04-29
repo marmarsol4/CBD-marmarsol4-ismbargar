@@ -7,7 +7,7 @@ Desarrollado por:
 ## Manual de instalación
 
 - Descargar el zip del código del repositorio.
-- Tener MongoDB en ejecución. Si no se hubiese instalado como servicio, deberá ejecutar el servicio mediante mongod.exe, cuyo ejecutable se encuentra en la carpeta bin. Para facilitar la tarea y en caso de encontrarse en Windows, recomendamos añadir esta carpeta a la variable de entorno path para poder ejecutar el comando mongod directamente en una terminal desde cualquier ruta.
+- Tener MongoDB en ejecución. Si no se hubiese instalado como servicio, deberá ejecutar el servicio mediante mongod.exe, cuyo ejecutable se encuentra en la carpeta bin. Para facilitar la tarea y en caso de encontrarse en Windows, se recomienda añadir esta carpeta a la variable de entorno path para poder ejecutar el comando mongod directamente en una terminal desde cualquier ruta.
 - Ejecución de backend: en una terminal que se encuentre en la ruta base del proyecto, cd backend, npm install y luego npm run dev. El servidor se ejecutará en localhost en el puerto 3000. 
 - Ejecución de frontend: En otra terminal, cd frontend, npm install, y finalmente npm run dev. La aplicación se ejecutará en localhost en el puesto 5173. 
 
@@ -15,7 +15,7 @@ Nota: Los npm install sólo son necesarios la primera vez que se vaya a ejecutar
 
 ## Manual de usuario
 
-Con la aplicación ejecutándose, accedemos a http://localhost:5173. La primera pantalla a que se accede es la del login, donde ya se permite alternar el modo de la aplicación entre MongoDB y Mongoose. Esto se aplicará al resto de pantallas de la aplicación. 
+Con la aplicación ejecutándose, acceder a http://localhost:5173. La primera pantalla a que se accede es la del login, donde ya se permite alternar el modo de la aplicación entre MongoDB y Mongoose. Esto se aplicará al resto de pantallas de la aplicación. 
 
 ![Captura de pantalla 2024-04-27 211418](https://github.com/marmarsol4/CBD-marmarsol4-ismbargar/assets/72874394/b9091ac9-04e8-46f2-af89-d2586217893f)
 
